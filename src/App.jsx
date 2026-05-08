@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter as BrowserRouter, Routes, Route } from "react-router-dom";
 import PhoneFrame from "./components/PhoneFrame";
 import { PhotoProvider } from "./contexts/PhotoContext";
 import { LocationProvider } from "./contexts/LocationContext";
