@@ -92,15 +92,15 @@ export default function Ranking() {
         style={{ boxShadow: "0 -4px 12px rgba(0,0,0,0.06)" }}
       >
         {/* 标题 */}
-        <div className="px-4 flex items-center justify-between mb-3">
-          <div className="flex-1 text-center text-[15px] font-semibold text-dpInk">
-            5月吃货排行榜
-          </div>
-          <button onClick={() => navigate("/?tab=following")}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
-              <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
+        <div className="px-4 flex items-center gap-3 mb-3">
+          <button onClick={() => navigate(-1)} className="shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5">
+              <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
+          <div className="flex-1 text-center text-[15px] font-semibold text-dpInk pr-5">
+            5月吃货排行榜
+          </div>
         </div>
 
         {/* 我的排名行(无背景色,简洁) */}
@@ -183,11 +183,9 @@ export default function Ranking() {
                       <img src={thumb} alt="" className="w-full h-full object-cover" />
                     </div>
                   )}
-                  {!r.isMe && (
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2">
-                      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2">
+                    <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
               </div>
             );
@@ -211,8 +209,8 @@ export default function Ranking() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "tween", duration: 0.25 }}
-              className="absolute inset-x-0 bottom-0 top-0 bg-white rounded-t-3xl flex flex-col z-20 overflow-hidden"
-              style={{ boxShadow: "0 -4px 12px rgba(0,0,0,0.06)" }}
+              className="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl flex flex-col z-20 overflow-hidden"
+              style={{ top: "40%", boxShadow: "0 -4px 12px rgba(0,0,0,0.06)" }}
             >
               <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-[#f5f5f5]">
                 <div className="text-[15px] font-semibold text-dpInk">

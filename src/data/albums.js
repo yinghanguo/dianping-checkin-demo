@@ -75,6 +75,21 @@ const INITIAL_ALBUMS = [
         photo: "https://images.unsplash.com/photo-1565060169187-5284992a47ea?w=600&q=80",
         caption: "建筑本身就值回票价，俯瞰巴塞的视角无敌",
       },
+      {
+        poi: { name: "古埃尔公园", city: "巴塞罗那", category: "公园景点", emoji: "🌳" },
+        photo: "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=600&q=80",
+        caption: "高迪的幻想世界，马赛克拼贴广场是全程高光，早上8点进去人最少",
+      },
+      {
+        poi: { name: "圣家族大教堂", city: "巴塞罗那", category: "宗教建筑", emoji: "⛪" },
+        photo: "https://images.unsplash.com/photo-1583779457094-ab6f80d80ba9?w=600&q=80",
+        caption: "140年还没建完，内部光线是最惊艳的部分，一定要买诞生立面的票",
+      },
+      {
+        poi: { name: "巴特罗之家", city: "巴塞罗那", category: "现代建筑", emoji: "🏛️" },
+        photo: "https://images.unsplash.com/photo-1564594985645-4427056e22e2?w=600&q=80",
+        caption: "高迪的海洋幻想，屋顶像龙脊，夜场灯光秀更震撼",
+      },
     ],
   },
 ];

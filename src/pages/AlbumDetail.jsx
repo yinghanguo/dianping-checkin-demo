@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAlbum, deleteAlbum } from "../data/albums";
@@ -51,10 +51,9 @@ export default function AlbumDetail() {
     <div className="absolute inset-0 bg-white flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto no-scrollbar pb-28">
 
-        {/* ── Carousel header ── */}
-        <HeaderCarousel
+        {/* ── Cover header ── */}
+        <CoverHeader
           cover={album.cover}
-          mapCheckins={mapCheckins}
           onBack={() => navigate(-1)}
           onMenu={() => setMenuOpen((v) => !v)}
           menuOpen={menuOpen}
@@ -119,6 +118,16 @@ export default function AlbumDetail() {
             </motion.div>
           ))}
         </div>
+
+        {/* ── Map section ── */}
+        {mapCheckins.length > 0 && (
+          <div className="px-4 pt-2 pb-5 border-t border-[#f5f5f5]">
+            <div className="text-[13px] font-medium text-dpText-secondary mb-3">专辑地点</div>
+            <div className="rounded-2xl overflow-hidden" style={{ height: 200 }}>
+              <CheckinMap checkins={mapCheckins} height={200} />
+            </div>
+          </div>
+        )}
 
         <div className="px-4 py-5 border-t border-[#f5f5f5] text-center">
           <div className="text-[11px] text-dpText-tertiary">由 Niki 整理 · 打开大众点评查看更多</div>
@@ -190,50 +199,15 @@ export default function AlbumDetail() {
   );
 }
 
-// ── Swipeable 2-slide header ──
-function HeaderCarousel({ cover, mapCheckins, onBack, onMenu, menuOpen, onEdit, onDelete }) {
-  const [slide, setSlide] = useState(0);
-  const startX = useRef(null);
-
-  const onPointerDown = (e) => { startX.current = e.clientX; };
-  const onPointerUp = (e) => {
-    if (startX.current === null) return;
-    const dx = e.clientX - startX.current;
-    if (Math.abs(dx) > 40) setSlide(dx < 0 ? 1 : 0);
-    startX.current = null;
-  };
-
+// ── Simple cover image header ──
+function CoverHeader({ cover, onBack, onMenu, menuOpen, onEdit, onDelete }) {
   return (
-    <div
-      className="relative overflow-hidden shrink-0 select-none"
-      style={{ height: 240 }}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-    >
-      {/* Track */}
+    <div className="relative overflow-hidden shrink-0" style={{ height: 240 }}>
+      <img src={cover} alt="" className="w-full h-full object-cover" draggable={false} />
       <div
-        className="flex h-full transition-transform duration-300 ease-out"
-        style={{ width: "200%", transform: `translateX(${slide === 0 ? "0%" : "-50%"})` }}
-      >
-        {/* Slide 1: cover photo */}
-        <div className="relative h-full bg-[#f0f0f0]" style={{ width: "50%" }}>
-          <img src={cover} alt="" className="w-full h-full object-cover" draggable={false} />
-          <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.35) 0%, transparent 50%)" }}
-          />
-        </div>
-        {/* Slide 2: map */}
-        <div className="h-full bg-[#f0f0f0]" style={{ width: "50%" }}>
-          {mapCheckins.length > 0 ? (
-            <CheckinMap checkins={mapCheckins} height={240} />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-dpText-tertiary text-[13px]">
-              地图加载中
-            </div>
-          )}
-        </div>
-      </div>
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.35) 0%, transparent 50%)" }}
+      />
 
       {/* Back button */}
       <button
@@ -286,22 +260,6 @@ function HeaderCarousel({ cover, mapCheckins, onBack, onMenu, menuOpen, onEdit, 
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-
-      {/* Dots */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-        {[0, 1].map((i) => (
-          <button
-            key={i}
-            onClick={() => setSlide(i)}
-            className="rounded-full transition-all"
-            style={{
-              width: slide === i ? 16 : 6,
-              height: 6,
-              background: slide === i ? "white" : "rgba(255,255,255,0.55)",
-            }}
-          />
-        ))}
       </div>
     </div>
   );

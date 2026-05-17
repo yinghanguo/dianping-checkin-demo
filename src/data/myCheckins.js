@@ -483,7 +483,7 @@ export const MY_CHECKINS = [
     name: "圣家族大教堂",
     city: "巴塞罗那", district: "扩展区", category: "人文古迹",
     achievement: "做个人生玩家!打卡第 16 个必玩榜",
-    photos: [IMG.sagrada],
+    photos: [IMG.sagrada, IMG.cathedral, IMG.monument],
     text: "建了140年还没建完，但内部彩窗的光线是我见过最美的，建议买内部门票+塔楼",
     likes: 1,
   }),
@@ -499,7 +499,7 @@ export const MY_CHECKINS = [
     name: "古埃尔公园",
     city: "巴塞罗那", district: "恩典区", category: "公园/广场",
     achievement: "做个人生玩家!打卡第 15 个必玩榜",
-    photos: [IMG.park_guell],
+    photos: [IMG.park_guell, IMG.trees, IMG.mountain],
     text: "高迪的幻想世界，马赛克拼贴的长椅俯瞰全城，傍晚光线最好，提前网上预约门票",
   }),
   ck({
@@ -507,7 +507,7 @@ export const MY_CHECKINS = [
     name: "巴特罗之家",
     city: "巴塞罗那", district: "扩展区", category: "人文古迹",
     achievement: "做个人生玩家!打卡第 14 个必玩榜",
-    photos: [IMG.casa_batllo],
+    photos: [IMG.casa_batllo, IMG.theatre, IMG.picasso],
     text: "高迪最迷幻的建筑，贝壳和龙骨的灵感随处可见，配套的AR导览做得非常好",
   }),
 
@@ -545,7 +545,7 @@ export const MY_CHECKINS = [
     name: "加泰罗尼亚国家艺术博物馆",
     city: "巴塞罗那", district: "蒙特惠奇区", category: "展览馆",
     achievement: "今年第 23 次打卡景点,给精神充电",
-    photos: [IMG.museum],
+    photos: [IMG.museum, IMG.plaza_espana, IMG.picasso],
     text: "建筑本身就值回票价，阶梯广场俯瞰巴塞全景是绝佳视角，罗马艺术展厅比想象中震撼",
   }),
   ck({
