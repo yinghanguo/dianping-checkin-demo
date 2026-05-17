@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import StatusBar from "../components/StatusBar";
 import { MY_CHECKINS, deriveStats } from "../data/myCheckins";
+import { getUserCheckins } from "../utils/userCheckins";
 
 // 「我的」页 — 高度还原点评原生设计
 // 入口在底部 Tab "我的"
 // 数据卡片三联中"打卡"是核心入口,点击进 /footprint
 export default function Me() {
   const navigate = useNavigate();
-  const stats = deriveStats(MY_CHECKINS);
+  // 真实打卡(localStorage)+ 历史 baseline,按时间倒序
+  const allCheckins = useMemo(
+    () => [...getUserCheckins(), ...MY_CHECKINS].sort((a, b) => b.timestamp - a.timestamp),
+    []
+  );
+  const stats = deriveStats(allCheckins);
 
   // 记录:用户上次在"我的"区域时是 /me
   React.useEffect(() => {
@@ -238,7 +244,7 @@ export default function Me() {
 
           {/* 内容瀑布流(双列) */}
           <div className="grid grid-cols-2 gap-2 px-2 py-2">
-            {MY_CHECKINS.slice(0, 8).map((c) => (
+            {allCheckins.slice(0, 8).map((c) => (
               <button
                 key={c.id}
                 onClick={() => navigate("/footprint")}
