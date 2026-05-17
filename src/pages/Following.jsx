@@ -1,8 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FRIEND_FEED, FRIEND_STORIES } from "../data/friendFeed";
 import { FRIENDS } from "../data/friends";
+import { getUserCheckins } from "../utils/userCheckins";
+
+const NIKI_AVATAR =
+  "https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc";
+
+// 相对时间:刚刚 / X 分钟前 / X 小时前 / 昨天 HH:MM / M/D HH:MM
+function relativeTime(ts) {
+  const now = Date.now();
+  const diff = Math.max(0, now - ts);
+  if (diff < 60_000) return "刚刚";
+  if (diff < 3600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+  if (diff < 86400_000) return `${Math.floor(diff / 3600_000)} 小时前`;
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  if (diff < 2 * 86400_000) return `昨天 ${hh}:${mm}`;
+  return `${d.getMonth() + 1}/${d.getDate()} ${hh}:${mm}`;
+}
 
 // 「关注」Tab 页内容(好友圈)
 // 结构:Story 行 → Banner(好友打卡排行) → 好友评价信息流
@@ -10,6 +28,9 @@ export default function Following() {
   const navigate = useNavigate();
   const [readStories, setReadStories] = useState(new Set());
   const [activeStoryIdx, setActiveStoryIdx] = useState(null);
+
+  // 我的最近打卡(取最新 3 条) - localStorage
+  const myRecentCheckins = useMemo(() => getUserCheckins().slice(0, 3), []);
 
   // 前三名好友头像(mock:取 FRIENDS 列表前3)
   const top3 = FRIENDS.slice(0, 3);
@@ -103,7 +124,42 @@ export default function Following() {
         </button>
       </div>
 
+      {/* ── 我的动态(只在有自己的打卡记录时展示) ── */}
+      {myRecentCheckins.length > 0 && (
+        <div className="border-t-[6px] border-[#f5f5f5]">
+          <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1 h-3 bg-dpOrange rounded-full" />
+              <span className="text-[13px] font-semibold text-dpInk">
+                我的动态
+              </span>
+              <span className="text-[11px] text-dpText-tertiary">
+                · 最近 {myRecentCheckins.length} 条
+              </span>
+            </div>
+            <button
+              onClick={() => navigate("/footprint")}
+              className="text-[11px] text-dpText-tertiary flex items-center gap-0.5"
+            >
+              查看全部
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+          {myRecentCheckins.map((c) => (
+            <MyCheckinCard key={c.id} checkin={c} onClick={() => navigate("/footprint")} />
+          ))}
+        </div>
+      )}
+
       {/* ── 好友评价/打卡信息流 ── */}
+      {myRecentCheckins.length > 0 && (
+        <div className="border-t-[6px] border-[#f5f5f5] px-4 pt-3 pb-2 flex items-center gap-1.5">
+          <div className="w-1 h-3 bg-dpOrange rounded-full" />
+          <span className="text-[13px] font-semibold text-dpInk">好友动态</span>
+        </div>
+      )}
       <div className="space-y-0">
         {FRIEND_FEED.map((item) => (
           <FeedCard key={item.id} item={item} />
@@ -122,6 +178,109 @@ export default function Following() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// ── 我的打卡卡片(简化版 FeedCard,无评分/无评价类型) ──
+function MyCheckinCard({ checkin, onClick }) {
+  const c = checkin;
+  const photos = c.photos || [];
+  const text = c.text || "";
+  return (
+    <button
+      onClick={onClick}
+      className="block w-full text-left px-4 py-4 border-b border-[#f5f5f5]"
+    >
+      {/* 头部 */}
+      <div className="flex items-start gap-2.5 mb-2">
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-[#f5f5f5] shrink-0">
+          <img src={NIKI_AVATAR} alt="" className="w-full h-full object-cover" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[14px] font-semibold text-dpInk">Niki</span>
+            <span
+              className="text-[9px] px-1 py-px rounded font-bold text-white shrink-0"
+              style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+            >
+              Lv8
+            </span>
+            <span className="text-[9px] px-1 py-px bg-dpOrange-bg text-dpOrange-deep rounded font-medium shrink-0">
+              我
+            </span>
+          </div>
+          <div className="text-[11px] text-dpText-secondary mt-0.5">
+            刚刚打卡了 {c.poi?.name && `· ${c.poi.name}`}
+          </div>
+        </div>
+        <span className="text-[11px] text-dpText-tertiary shrink-0">
+          {relativeTime(c.timestamp)}
+        </span>
+      </div>
+
+      {/* 正文(若有) */}
+      {text && (
+        <div className="mb-2 text-[14px] text-dpInk leading-relaxed">
+          {text.length > 80 ? text.slice(0, 80) + "..." : text}
+        </div>
+      )}
+
+      {/* 照片 */}
+      {photos.length > 0 && (
+        <div
+          className={`mb-2 gap-1 ${
+            photos.length === 1 ? "w-[180px]" : "grid grid-cols-3"
+          }`}
+        >
+          {photos.slice(0, 6).map((p, i) => (
+            <div
+              key={i}
+              className="rounded-lg overflow-hidden bg-[#f0f0f0]"
+              style={{ aspectRatio: photos.length === 1 ? "4/3" : "1/1" }}
+            >
+              <img src={p} alt="" className="w-full h-full object-cover" loading="lazy" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* POI 卡片(无评分) */}
+      {c.poi?.name && (
+        <div
+          className="rounded-xl p-2.5 flex items-center gap-2.5 mb-2"
+          style={{ background: "#FAFAF7" }}
+        >
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-white shrink-0">
+            {c.poi.emoji || "📍"}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1">
+              <span className="text-[13px] font-semibold text-dpInk truncate">
+                {c.poi.name}
+              </span>
+              {c.poi.city && (
+                <span className="text-[11px] text-dpText-tertiary shrink-0 ml-auto">
+                  {c.poi.city}
+                </span>
+              )}
+            </div>
+            <div className="text-[10px] text-dpText-tertiary mt-0.5 truncate">
+              {c.poi.category || "地点"}
+              {c.poi.district && ` · ${c.poi.district}`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 底部操作栏 */}
+      <div className="flex items-center justify-between text-[12px] text-dpText-tertiary pt-1">
+        <span className="text-[11px] text-dpText-tertiary">{c.date} · {c.time}</span>
+        <div className="flex items-center gap-4">
+          <span>💬 评论{c.comments ? ` ${c.comments}` : ""}</span>
+          <span>♡ 点赞{c.likes ? ` ${c.likes}` : ""}</span>
+        </div>
+      </div>
+    </button>
   );
 }
 

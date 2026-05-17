@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import StatusBar from "../components/StatusBar";
 import { useLocation } from "../contexts/LocationContext";
 import { searchPOIs, fetchNearbyPOIs } from "../utils/osmPoi";
+import { findNearbyCustomPois } from "../utils/customPois";
+import CreatePoiSheet from "../components/CreatePoiSheet";
 
 export default function POI() {
   const navigate = useNavigate();
@@ -31,6 +33,59 @@ export default function POI() {
 
   const [nearby, setNearby] = useState([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
+
+  // 自建地点
+  const [customNearby, setCustomNearby] = useState([]);
+  const refreshCustom = () => {
+    if (coords) setCustomNearby(findNearbyCustomPois(coords, 1000));
+  };
+  useEffect(() => {
+    refreshCustom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coords?.lat, coords?.lng]);
+
+  // 新建/编辑地点 Sheet
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDefaultName, setCreateDefaultName] = useState("");
+  const [editingPoi, setEditingPoi] = useState(null);
+  const [createdToast, setCreatedToast] = useState(null);
+
+  const openCreate = (defaultName = "") => {
+    setEditingPoi(null);
+    setCreateDefaultName(defaultName);
+    setCreateOpen(true);
+  };
+
+  const openEdit = (poi) => {
+    setEditingPoi(poi);
+    setCreateDefaultName("");
+    setCreateOpen(true);
+  };
+
+  const handleCreated = (poi) => {
+    const wasEditing = !!editingPoi;
+    refreshCustom();
+    setCreateOpen(false);
+    setEditingPoi(null);
+    // 自动选中刚创建/编辑的
+    setPendingPOI(poi);
+    setCreatedToast(
+      wasEditing ? `已更新「${poi.name}」` : `已创建并选中「${poi.name}」`
+    );
+    // 清空搜索词,这样能立刻看到自建在「我创建的地点」分组里
+    setQuery("");
+    setTimeout(() => setCreatedToast(null), 1800);
+  };
+
+  const handleDeleted = (id) => {
+    refreshCustom();
+    setCreateOpen(false);
+    setEditingPoi(null);
+    // 如果删除的是当前选中的,清空
+    if (pendingPOI?.id === id) setPendingPOI(null);
+    setCreatedToast("已删除");
+    setTimeout(() => setCreatedToast(null), 1500);
+  };
 
   // 本地 pending 选中(确认前不写全局)
   const [pendingPOI, setPendingPOI] = useState(userSelectedPOI || null);
@@ -97,6 +152,17 @@ export default function POI() {
   const inSearchMode = query.trim().length > 0;
   const aiRecommend = nearby[0];
   const others = nearby.slice(1);
+
+  // 搜索模式下也匹配自建地点(名称/标签 contains)
+  const customSearchHits = inSearchMode
+    ? customNearby.filter((p) => {
+        const q = debouncedQuery.toLowerCase();
+        return (
+          p.name.toLowerCase().includes(q) ||
+          (p.tag && p.tag.toLowerCase().includes(q))
+        );
+      })
+    : [];
 
   // mock fallback (当 OSM 真没结果时显示 LocationContext 的 mock)
   const mockFallback =
@@ -193,6 +259,29 @@ export default function POI() {
         {/* ── 搜索模式 ── */}
         {inSearchMode && (
           <div className="px-4 pt-3">
+            {/* 自建地点命中(置顶) */}
+            {customSearchHits.length > 0 && (
+              <div className="mb-3">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-1 h-3 bg-dpOrange rounded-full" />
+                  <span className="text-[13px] font-medium text-dpInk">
+                    我创建的地点
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  {customSearchHits.map((p) => (
+                    <PoiRow
+                      key={p.id}
+                      poi={p}
+                      selected={selectedId === p.id}
+                      onSelect={() => selectPOI(p)}
+                      onEdit={() => openEdit(p)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-1.5 mb-2">
               <div className="w-1 h-3 bg-dpOrange rounded-full" />
               <span className="text-[13px] font-medium text-dpInk">
@@ -206,10 +295,11 @@ export default function POI() {
             </div>
 
             {!searching && searchResults.length === 0 && debouncedQuery && (
-              <div className="py-12 flex flex-col items-center gap-2 text-dpText-tertiary">
+              <div className="py-6 flex flex-col items-center gap-2">
                 <div className="text-3xl">🔍</div>
-                <div className="text-[13px]">没找到「{debouncedQuery}」相关地点</div>
-                <div className="text-[11px]">试试搜索其他关键词</div>
+                <div className="text-[13px] text-dpText-tertiary">
+                  没找到「{debouncedQuery}」相关地点
+                </div>
               </div>
             )}
 
@@ -223,6 +313,34 @@ export default function POI() {
                 />
               ))}
             </div>
+
+            {/* 入口 A: 搜索模式下常驻新建入口
+                —— 不管有没有结果都给入口,因为结果可能都不是用户想要的 */}
+            {debouncedQuery && !searching && (
+              <button
+                onClick={() => openCreate(debouncedQuery)}
+                className="mt-3 mb-2 w-full p-3 rounded-2xl flex items-center gap-3 text-left bg-dpOrange-bg/60 border border-dpOrange/30 active:bg-dpOrange-bg"
+              >
+                <div
+                  className="w-11 h-11 rounded-xl shrink-0 flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, #FF6F00, #FFA040)",
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] font-medium text-dpInk truncate">
+                    新建地点「{debouncedQuery.length > 14 ? debouncedQuery.slice(0, 14) + '…' : debouncedQuery}」
+                  </div>
+                  <div className="text-[11px] text-dpText-secondary mt-0.5">
+                    都不对?用当前位置创建一个自己的地点
+                  </div>
+                </div>
+              </button>
+            )}
           </div>
         )}
 
@@ -289,6 +407,32 @@ export default function POI() {
               </div>
             )}
 
+            {/* 我创建的地点(在附近的) */}
+            {customNearby.length > 0 && (
+              <div className="px-4 pt-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <div className="w-1 h-3 bg-dpOrange rounded-full" />
+                  <span className="text-[13px] font-medium text-dpInk">
+                    我创建的地点
+                  </span>
+                  <span className="text-[11px] text-dpText-tertiary ml-1">
+                    {customNearby.length}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  {customNearby.map((p) => (
+                    <PoiRow
+                      key={p.id}
+                      poi={p}
+                      selected={selectedId === p.id}
+                      onSelect={() => selectPOI(p)}
+                      onEdit={() => openEdit(p)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 附近列表 */}
             <div className="px-4 pt-4">
               <div className="flex items-center gap-1.5 mb-2">
@@ -337,10 +481,55 @@ export default function POI() {
                   />
                 ))}
               </div>
+
+              {/* 入口 B: 列表底部常驻新建 */}
+              <button
+                onClick={() => openCreate("")}
+                className="mt-3 mb-2 w-full h-12 rounded-2xl border border-dashed border-dpOrange/40 bg-dpOrange-bg/40 flex items-center justify-center gap-2 text-dpOrange-deep text-[13px] font-medium active:bg-dpOrange-bg"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E55A00" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                </svg>
+                找不到?新建一个地点
+              </button>
             </div>
           </>
         )}
       </div>
+
+      {/* 创建成功 Toast */}
+      <AnimatePresence>
+        {createdToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.18 }}
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-full bg-dpInk/90 text-white text-[12px] flex items-center gap-1.5"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+              <path d="M5 12l5 5 9-9" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {createdToast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 新建/编辑地点 Sheet */}
+      <CreatePoiSheet
+        open={createOpen}
+        onClose={() => { setCreateOpen(false); setEditingPoi(null); }}
+        coords={coords}
+        addressLabel={
+          streetAddress
+            ? `${shortAddress || ""}${shortAddress ? " · " : ""}${streetAddress}`
+            : shortAddress
+        }
+        defaultName={createDefaultName}
+        editing={editingPoi}
+        onCreated={handleCreated}
+        onDeleted={handleDeleted}
+      />
 
       {/* 底部确认按钮 */}
       <div className="absolute bottom-0 left-0 right-0 px-5 pt-3 pb-7 bg-gradient-to-t from-white via-white/95 to-transparent">
@@ -368,35 +557,70 @@ export default function POI() {
 }
 
 // 单个 POI 行
-function PoiRow({ poi, selected, onSelect }) {
+function PoiRow({ poi, selected, onSelect, onEdit }) {
+  const isCustom = !!poi.isCustom;
   return (
-    <button
-      onClick={onSelect}
-      className="flex items-center gap-3 py-3 text-left"
-    >
-      <div className="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center text-2xl bg-[#FAFAF7]">
-        {poi.emoji || "📍"}
-      </div>
-      <div className="flex-1 min-w-0 border-b border-[#f5f5f5] pb-3">
-        <div className="text-[14px] text-dpInk truncate">{poi.name}</div>
-        <div className="flex items-center gap-1.5 mt-1 text-[11px] text-dpText-tertiary">
-          <span className="text-dpOrange-deep font-medium">
-            ★ {poi.rating?.toFixed(1) || "4.5"}
-          </span>
-          <span>·</span>
-          <span className="truncate max-w-[100px]">{poi.category}</span>
-          {poi.distance && (
-            <>
-              <span>·</span>
-              <span>{poi.distance}</span>
-            </>
-          )}
+    <div className="flex items-stretch gap-3 py-3">
+      <button
+        onClick={onSelect}
+        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+      >
+        <div className="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center text-2xl bg-[#FAFAF7]">
+          {poi.emoji || "📍"}
         </div>
+        <div className="flex-1 min-w-0 border-b border-[#f5f5f5] pb-3">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className="text-[14px] text-dpInk truncate">{poi.name}</div>
+            {isCustom && (
+              <span className="shrink-0 text-[10px] px-1.5 py-px rounded bg-dpOrange-bg text-dpOrange-deep font-medium">
+                我创建
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-dpText-tertiary">
+            {isCustom ? (
+              <span className="text-dpOrange-deep font-medium">
+                🏷️ {poi.tag || "我的地点"}
+              </span>
+            ) : (
+              <>
+                <span className="text-dpOrange-deep font-medium">
+                  ★ {poi.rating?.toFixed(1) || "4.5"}
+                </span>
+                <span>·</span>
+                <span className="truncate max-w-[100px]">{poi.category}</span>
+              </>
+            )}
+            {poi.distance && (
+              <>
+                <span>·</span>
+                <span>{poi.distance}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </button>
+      <div className="flex items-start gap-1 pb-3 shrink-0">
+        {onEdit && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="w-7 h-7 rounded-full flex items-center justify-center active:bg-[#f5f5f5]"
+            aria-label="编辑"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
+              <path d="M4 20h4l10-10-4-4L4 16v4z" strokeLinejoin="round" />
+              <path d="M14 6l4 4" strokeLinecap="round" />
+            </svg>
+          </button>
+        )}
+        <button onClick={onSelect} className="pt-0.5">
+          {selected ? <SelectedDot /> : <UnselectedDot />}
+        </button>
       </div>
-      <div className="pb-3">
-        {selected ? <SelectedDot /> : <UnselectedDot />}
-      </div>
-    </button>
+    </div>
   );
 }
 

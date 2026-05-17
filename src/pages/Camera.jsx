@@ -907,7 +907,7 @@ export default function Camera() {
               </div>
 
               {/* ── 底部单按钮:发布打卡 ── */}
-              <div className="px-5 pt-3 pb-7 shrink-0 bg-white border-t border-[#f5f5f5]">
+              <div className="px-5 pt-3 pb-7 shrink-0 bg-white">
                 <motion.button
                   whileTap={hasAnyInput ? { scale: 0.97 } : {}}
                   onClick={hasAnyInput ? handlePublish : undefined}
@@ -942,6 +942,10 @@ export default function Camera() {
 
 // 拍立得横排:每张一个独立小拍立得,可点击进大图查看
 function PolaroidRow({ photos, onPreview, onRemove, onAdd, maxPhotos = 3 }) {
+  const todayLabel = (() => {
+    const d = new Date();
+    return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+  })();
   if (!photos.length) return null;
   const canAddMore = photos.length < maxPhotos;
   return (
@@ -986,7 +990,7 @@ function PolaroidRow({ photos, onPreview, onRemove, onAdd, maxPhotos = 3 }) {
               className="text-[10px] font-bold text-dpInk leading-none italic"
               style={{ fontFamily: "Georgia, serif" }}
             >
-              05/05
+              {todayLabel}
             </span>
             <span className="text-[8px] text-dpText-tertiary">{i + 1}/{photos.length}</span>
           </div>

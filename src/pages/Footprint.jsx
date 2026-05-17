@@ -3,24 +3,49 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import StatusBar from "../components/StatusBar";
 import { MY_CHECKINS, deriveStats, deriveTrips } from "../data/myCheckins";
+import {
+  getMergedCheckins,
+  removeCheckin,
+  setCheckinVisibility,
+} from "../utils/userCheckins";
 import { BottomTab } from "./Me";
 import { FRIENDS } from "../data/friends";
 import CheckinMap from "../components/CheckinMap";
 import { usePhoto } from "../contexts/PhotoContext";
 import { loadAlbums } from "../data/albums";
+import CheckinTimelineItem from "../components/CheckinTimelineItem";
 
 // 个人层主页 — 三视图:列表 / 地图 / 路线
 export default function Footprint() {
   const navigate = useNavigate();
   const { footprintView: view, setFootprintView: setView } = usePhoto();
 
-  const stats = deriveStats(MY_CHECKINS);
+  // 实时打卡(localStorage)+ 历史 baseline,按时间倒序;支持删除/改可见性后刷新
+  const [refreshTick, setRefreshTick] = useState(0);
+  const allCheckins = useMemo(
+    () => getMergedCheckins(MY_CHECKINS),
+    [refreshTick]
+  );
+  const refresh = () => setRefreshTick((t) => t + 1);
+  const handleDelete = (id) => {
+    const target = allCheckins.find((c) => c.id === id);
+    removeCheckin(id, { isUserCreated: !!target?.isUserCreated });
+    refresh();
+  };
+  const handleChangeVisibility = (id, visibility) => {
+    const target = allCheckins.find((c) => c.id === id);
+    setCheckinVisibility(id, visibility, {
+      isUserCreated: !!target?.isUserCreated,
+    });
+    refresh();
+  };
+  const stats = deriveStats(allCheckins);
 
   // 记录:用户上次在"我的"区域时是 /footprint
   React.useEffect(() => {
     sessionStorage.setItem("lastMeRoute", "/footprint");
   }, []);
-  const trips = useMemo(() => deriveTrips(MY_CHECKINS), []);
+  const trips = useMemo(() => deriveTrips(allCheckins), [allCheckins]);
 
   return (
     <div className="absolute inset-0 bg-white flex flex-col">
@@ -95,12 +120,16 @@ export default function Footprint() {
         <AnimatePresence mode="wait">
           {view === "list" && (
             <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <ListView checkins={MY_CHECKINS} />
+              <ListView
+                checkins={allCheckins}
+                onDelete={handleDelete}
+                onChangeVisibility={handleChangeVisibility}
+              />
             </motion.div>
           )}
           {view === "map" && (
             <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <MapView checkins={MY_CHECKINS} stats={stats} />
+              <MapView checkins={allCheckins} stats={stats} />
             </motion.div>
           )}
           {view === "trips" && (
@@ -125,18 +154,7 @@ export default function Footprint() {
 // ──────────────────────────────────────────
 // 列表视图(参考点评原生设计 + 时间轴)
 // ──────────────────────────────────────────
-function ListView({ checkins }) {
-  // 按日期分组
-  const groups = useMemo(() => {
-    const m = new Map();
-    for (const c of checkins) {
-      const key = `${c.date} ${c.weekday} ${c.time}`;
-      if (!m.has(key)) m.set(key, []);
-      m.get(key).push(c);
-    }
-    return Array.from(m.entries()).map(([key, items]) => ({ key, items }));
-  }, [checkins]);
-
+function ListView({ checkins, onDelete, onChangeVisibility }) {
   return (
     <div className="px-4 py-3">
       {/* 信息流顶部:计数 + 搜索入口 */}
@@ -157,116 +175,17 @@ function ListView({ checkins }) {
           </svg>
         </button>
       </div>
-      {checkins.map((c, i) => (
-        <CheckinTimelineItem key={c.id} checkin={c} index={i} />
+      {checkins.map((c) => (
+        <CheckinTimelineItem
+          key={c.id}
+          checkin={c}
+          onDelete={onDelete}
+          onChangeVisibility={onChangeVisibility}
+        />
       ))}
       <div className="text-center text-[11px] text-dpText-tertiary py-6">
         — 已展示全部 {checkins.length} 条打卡 —
       </div>
-    </div>
-  );
-}
-
-function CheckinTimelineItem({ checkin: c, index }) {
-  return (
-    <div className="relative pl-5 pb-5">
-      {/* 时间轴左侧的点 + 线 */}
-      <div className="absolute left-0 top-2 w-2.5 h-2.5 rounded-full bg-dpOrange shrink-0" />
-      <div className="absolute left-[5px] top-5 bottom-0 w-px bg-[#eee]" />
-
-      {/* 头部:日期 + 时间 + 隐私 */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-[14px] font-semibold text-dpInk">{c.date}日</span>
-          <span className="text-[11px] text-dpText-tertiary">{c.weekday} {c.time}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {c.visibility === "private" && (
-            <span className="text-[10px] text-dpText-tertiary flex items-center gap-0.5">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="5" y="11" width="14" height="10" rx="2" />
-                <path d="M8 11V7a4 4 0 018 0v4" strokeLinecap="round" />
-              </svg>
-              仅自己可见
-            </span>
-          )}
-          <button className="text-dpText-tertiary">
-            <svg width="14" height="3" viewBox="0 0 14 3" fill="currentColor">
-              <circle cx="2" cy="1.5" r="1.5" />
-              <circle cx="7" cy="1.5" r="1.5" />
-              <circle cx="12" cy="1.5" r="1.5" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* POI 卡片 */}
-      <div className="bg-[#F8F8F5] rounded-xl px-3 py-2.5 flex items-center gap-2.5 mb-2">
-        <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center text-xl shrink-0"
-          style={{
-            background: "linear-gradient(135deg, #FFF6E5, #FFEAD0)",
-          }}
-        >
-          {c.poi.emoji}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-medium text-dpInk truncate">
-            {c.poi.name}
-          </div>
-          <div className="text-[11px] text-dpText-tertiary mt-0.5 truncate">
-            {c.poi.district || c.poi.city} {c.poi.district && `· ${c.poi.city}`} · {c.poi.category}
-          </div>
-        </div>
-      </div>
-
-      {/* 成就标签 */}
-      {c.achievement && (
-        <div className="flex items-center gap-1 text-[12px] text-dpOrange-deep mb-2">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z" />
-          </svg>
-          <span className="truncate">{c.achievement}</span>
-        </div>
-      )}
-
-      {/* 文字内容 */}
-      {c.text && (
-        <div className="text-[13px] text-dpInk leading-relaxed mb-2 whitespace-pre-wrap">
-          {c.text}
-        </div>
-      )}
-
-      {/* 照片 */}
-      {c.photos.length > 0 && (
-        <div
-          className={
-            c.photos.length === 1
-              ? "w-[160px] rounded-xl overflow-hidden"
-              : c.photos.length === 2
-              ? "grid grid-cols-2 gap-1.5 max-w-[280px]"
-              : "grid grid-cols-3 gap-1.5"
-          }
-        >
-          {c.photos.map((p, i) => (
-            <div
-              key={i}
-              className="rounded-xl overflow-hidden bg-[#f0f0f0]"
-              style={{ aspectRatio: c.photos.length === 1 ? "1/1" : "1/1" }}
-            >
-              <img src={p} alt="" className="w-full h-full object-cover" loading="lazy" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 互动数据 */}
-      {(c.likes > 0 || c.comments > 0) && (
-        <div className="flex items-center gap-3 mt-2 text-[11px] text-dpText-tertiary">
-          {c.likes > 0 && <span>♡ {c.likes}</span>}
-          {c.comments > 0 && <span>💬 {c.comments}</span>}
-        </div>
-      )}
     </div>
   );
 }
