@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import StatusBar from "../components/StatusBar";
 import Following from "./Following";
+import { getList, beenThereStats } from "../data/lists";
 
 // 大众点评首页（精简版）：保留视觉感，重点突出底部加号入口
 export default function Home() {
@@ -158,6 +159,8 @@ export default function Home() {
 
         {/* 双列瀑布流 */}
         <div className="px-2 pt-2 grid grid-cols-2 gap-2 pb-32">
+          {/* 清单卡片:私藏清单在信息流的分发形态 */}
+          <ListFeedCard navigate={navigate} />
           {feeds.map((f, i) => (
             <div
               key={i}
@@ -285,5 +288,76 @@ export default function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── 信息流清单卡片:四宫格封面 + 主题 + 创作者(人格化:头像前置) ──
+function ListFeedCard({ navigate }) {
+  const list = getList("list_f_shanghai_date");
+  if (!list) return null;
+  const stats = beenThereStats(list);
+  const photos = list.items.map((it) => it.photo).slice(0, 4);
+  return (
+    <button
+      onClick={() => navigate(`/album/${list.id}`)}
+      className="bg-white rounded-xl overflow-hidden text-left"
+      style={{
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        border: "1px solid #FFE0C7",
+      }}
+    >
+      {/* 封面拼图 */}
+      <div className="relative w-full" style={{ aspectRatio: "3/4" }}>
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-white">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="bg-[#f0f0f0] overflow-hidden">
+              {photos[i % photos.length] && (
+                <img src={photos[i % photos.length]} alt="" className="w-full h-full object-cover" />
+              )}
+            </div>
+          ))}
+        </div>
+        <div
+          className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[10px] text-white font-medium flex items-center gap-0.5"
+          style={{ background: "rgba(255,111,0,0.9)" }}
+        >
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+          </svg>
+          私藏清单
+        </div>
+        {stats.all && (
+          <div
+            className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] text-white"
+            style={{ background: "rgba(46,125,50,0.85)" }}
+          >
+            ✓ {list.items.length} 家店全部去过
+          </div>
+        )}
+      </div>
+      <div className="px-2 py-2">
+        <div
+          className="text-[13px] font-medium text-dpInk leading-snug"
+          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+        >
+          {list.title}
+        </div>
+        <div className="text-[11px] text-dpText-secondary mt-1 truncate">
+          “{list.items[0]?.reason}”
+        </div>
+        <div className="flex items-center justify-between mt-2 text-[11px] text-dpText-tertiary">
+          <div className="flex items-center gap-1 min-w-0">
+            <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 bg-[#f0f0f0]">
+              <img src={list.owner.avatar} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="truncate">{list.owner.name}</span>
+          </div>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <span>♡</span>
+            {list.likeCount}
+          </div>
+        </div>
+      </div>
+    </button>
   );
 }

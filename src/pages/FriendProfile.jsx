@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import StatusBar from "../components/StatusBar";
 import { FRIENDS } from "../data/friends";
 import { getProfileForFriend } from "../data/friendProfiles";
+import { getPublicListsOf, beenThereStats } from "../data/lists";
 
 // 口味档案页 — 好友月度美食记录
 // 参考真实点评截图:
@@ -20,6 +21,7 @@ export default function FriendProfile() {
   };
 
   const profile = useMemo(() => getProfileForFriend(friendName), [friendName]);
+  const friendLists = useMemo(() => getPublicListsOf(friendName), [friendName]);
   const [savedItems, setSavedItems] = useState(new Set());
 
   const toggleSave = (i) => {
@@ -42,6 +44,57 @@ export default function FriendProfile() {
         className="flex-1 overflow-y-auto no-scrollbar rounded-t-3xl bg-white mt-[220px] pt-4 pb-24"
         style={{ boxShadow: "0 -4px 12px rgba(0,0,0,0.06)" }}
       >
+        {/* ── TA 的私藏(品味橱窗) ── */}
+        {friendLists.length > 0 && (
+          <div className="mb-4">
+            <div className="px-4 flex items-center gap-1.5 mb-2.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+              </svg>
+              <span className="text-[14px] font-semibold text-dpInk">TA 的私藏</span>
+              <span className="text-[10.5px] text-dpText-tertiary ml-1">
+                {friendLists.length} 份公开清单
+              </span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 pb-1">
+              {friendLists.map((l) => {
+                const stats = beenThereStats(l);
+                return (
+                  <button
+                    key={l.id}
+                    onClick={() => navigate(`/album/${l.id}`)}
+                    className="shrink-0 w-[170px] text-left rounded-2xl overflow-hidden bg-white"
+                    style={{ border: "1px solid #f0f0f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
+                  >
+                    <div className="relative w-full bg-[#f0f0f0]" style={{ aspectRatio: "4/3" }}>
+                      <img src={l.cover} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      {stats.all && (
+                        <div
+                          className="absolute bottom-1.5 left-1.5 px-1.5 py-px rounded text-[9px] text-white font-medium flex items-center gap-0.5"
+                          style={{ background: "rgba(46,125,50,0.85)" }}
+                        >
+                          ✓ 全部去过
+                        </div>
+                      )}
+                    </div>
+                    <div className="px-2.5 py-2">
+                      <div
+                        className="text-[12px] font-medium text-dpInk leading-snug"
+                        style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                      >
+                        {l.title}
+                      </div>
+                      <div className="text-[10px] text-dpText-tertiary mt-1">
+                        {l.items.length} 家店 · ♡ {l.likeCount} · 藏 {l.saveCount}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* 标题行 */}
         <div className="px-4 flex items-center justify-between mb-3">
           <div className="text-[15px] font-semibold text-dpInk">

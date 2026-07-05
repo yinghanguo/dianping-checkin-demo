@@ -12,7 +12,7 @@ import { BottomTab } from "./Me";
 import { FRIENDS } from "../data/friends";
 import CheckinMap from "../components/CheckinMap";
 import { usePhoto } from "../contexts/PhotoContext";
-import { loadAlbums } from "../data/albums";
+import { getMyLists } from "../data/lists";
 import CheckinTimelineItem from "../components/CheckinTimelineItem";
 
 // 个人层主页 — 三视图:列表 / 地图 / 路线
@@ -98,7 +98,7 @@ export default function Footprint() {
           { key: "list", label: "打卡", icon: ListIcon },
           { key: "map", label: "地图", icon: MapIcon },
           { key: "trips", label: "路线", icon: RouteIcon },
-          { key: "albums", label: "专辑", icon: AlbumIcon },
+          { key: "albums", label: "私藏", icon: AlbumIcon },
         ].map((v) => (
           <button
             key={v.key}
@@ -489,13 +489,13 @@ function TripCard({ trip }) {
 // ──────────────────────────────────────────
 function AlbumsView() {
   const navigate = useNavigate();
-  const albums = loadAlbums();
+  const albums = getMyLists();
 
   return (
     <div className="px-4 py-4">
       {/* Header row */}
       <div className="flex items-center justify-between mb-4">
-        <div className="text-[13px] text-dpText-tertiary">{albums.length} 个专辑</div>
+        <div className="text-[13px] text-dpText-tertiary">{albums.length} 份私藏清单</div>
         <button
           onClick={() => navigate("/album/create")}
           className="flex items-center gap-1 px-3 h-7 rounded-full text-white text-[12px] font-medium"
@@ -504,7 +504,7 @@ function AlbumsView() {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
             <path d="M12 5v14M5 12h14" strokeLinecap="round" />
           </svg>
-          新建专辑
+          新建清单
         </button>
       </div>
 
@@ -525,6 +525,15 @@ function AlbumsView() {
                   background: "linear-gradient(0deg, rgba(0,0,0,0.45) 0%, transparent 55%)",
                 }}
               />
+              <div
+                className="absolute top-1.5 left-1.5 px-1.5 py-px rounded text-[9px] text-white"
+                style={{
+                  background:
+                    album.visibility === "private" ? "rgba(0,0,0,0.55)" : "rgba(255,111,0,0.85)",
+                }}
+              >
+                {album.visibility === "private" ? "🔒 私密" : "公开"}
+              </div>
               <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2">
                 <div
                   className="text-white text-[12px] font-semibold leading-snug"
@@ -550,8 +559,8 @@ function AlbumsView() {
       {albums.length === 0 && (
         <div className="flex flex-col items-center justify-center h-48 text-dpText-tertiary gap-2">
           <div className="text-[40px]">📚</div>
-          <div className="text-[14px] text-dpInk">还没有专辑</div>
-          <div className="text-[12px]">把打卡记录整理成主题推荐清单</div>
+          <div className="text-[14px] text-dpInk">还没有私藏清单</div>
+          <div className="text-[12px]">把打卡记录整理成你的私藏好店</div>
         </div>
       )}
     </div>

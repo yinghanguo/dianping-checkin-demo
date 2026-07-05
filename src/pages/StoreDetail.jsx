@@ -1,6 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import SaveToListSheet from "../components/SaveToListSheet";
+import { getListsContaining, getReasonFor, getMyLists } from "../data/lists";
 
 // Deterministic pseudo-random from string seed
 function seededNum(str, min, max, offset = 0) {
@@ -114,8 +115,8 @@ export default function StoreDetail() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const [activeTab, setActiveTab] = useState(2); // default: 评价
-  const [saved, setSaved] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
+  const [saveSheetOpen, setSaveSheetOpen] = useState(false);
+  const [listTick, setListTick] = useState(0);
 
   const poi = state?.poi ?? { name: "门店", city: "未知", district: "", category: "" };
   const caption = state?.caption ?? "";
@@ -149,11 +150,16 @@ export default function StoreDetail() {
     ? ["拿铁", "美式", "手冲", "招牌蛋糕"]
     : ["招牌 tapas", "今日特推", "本地特色"];
 
-  const handleSave = () => {
-    setSaved((v) => !v);
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 1800);
-  };
+  // 收录本店的公开清单(店页「被收录」模块)
+  const includedLists = useMemo(
+    () => getListsContaining(poi.name),
+    [poi.name, listTick]
+  );
+  // 我是否已把本店收入某个清单
+  const inMyList = useMemo(
+    () => getMyLists().some((l) => l.items.some((it) => it.poi?.name === poi.name)),
+    [poi.name, listTick]
+  );
 
   const handleCheckin = () => {
     navigate("/camera");
@@ -254,6 +260,52 @@ export default function StoreDetail() {
             <span className="text-[13px] text-dpText-secondary">点击查看电话</span>
           </div>
         </div>
+
+        {/* ── 被收录模块:清单为门店背书,店的流量给人导流 ── */}
+        {includedLists.length > 0 && (
+          <div className="py-3.5 border-b border-[#f5f5f5]">
+            <div className="px-4 flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+                </svg>
+                <span className="text-[14px] font-semibold text-dpInk">
+                  被 {includedLists.length} 份私藏收录
+                </span>
+              </div>
+              <span className="text-[10.5px] text-dpText-tertiary">来自真实去过的人</span>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto no-scrollbar px-4 pb-1">
+              {includedLists.slice(0, 3).map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => navigate(`/album/${l.id}`)}
+                  className="shrink-0 w-[240px] text-left rounded-2xl p-3"
+                  style={{ background: "#FFFAF5", border: "1px solid #FFE8D5" }}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-6 h-6 rounded-full overflow-hidden bg-[#f0f0f0] shrink-0">
+                      <img src={l.owner.avatar} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-[11px] text-dpText-secondary truncate flex-1">
+                      {l.owner.name}
+                    </span>
+                    <span className="text-[10px] text-dpText-tertiary shrink-0">♡ {l.likeCount}</span>
+                  </div>
+                  <div className="text-[13px] font-semibold text-dpInk truncate">{l.title}</div>
+                  {getReasonFor(l, poi.name) && (
+                    <div
+                      className="text-[11.5px] text-dpText-secondary mt-1 leading-snug"
+                      style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                    >
+                      “{getReasonFor(l, poi.name)}”
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Tabs ── */}
         <div className="flex border-b border-[#f5f5f5] bg-white sticky top-0 z-10">
@@ -367,15 +419,17 @@ export default function StoreDetail() {
         className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#f5f5f5] flex items-center gap-3 px-4 pt-3"
         style={{ paddingBottom: 28 }}
       >
-        {/* 收藏 */}
+        {/* 收入私藏(原收藏按钮升级) */}
         <button
-          onClick={handleSave}
+          onClick={() => setSaveSheetOpen(true)}
           className="flex flex-col items-center gap-0.5 min-w-[48px]"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill={saved ? "#FF6F00" : "none"} stroke={saved ? "#FF6F00" : "#999"} strokeWidth="2">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill={inMyList ? "#FF6F00" : "none"} stroke={inMyList ? "#FF6F00" : "#999"} strokeWidth="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
           </svg>
-          <span className="text-[10px]" style={{ color: saved ? "#FF6F00" : "#999" }}>收藏</span>
+          <span className="text-[10px]" style={{ color: inMyList ? "#FF6F00" : "#999" }}>
+            {inMyList ? "已私藏" : "收入私藏"}
+          </span>
         </button>
 
         {/* 打卡 button */}
@@ -404,18 +458,14 @@ export default function StoreDetail() {
         </button>
       </div>
 
-      {/* Save toast */}
-      <AnimatePresence>
-        {toastVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-            className="absolute bottom-28 left-1/2 -translate-x-1/2 whitespace-nowrap px-4 py-2 rounded-full text-white text-[13px]"
-            style={{ background: "rgba(0,0,0,0.72)" }}
-          >
-            {saved ? "已收藏 ❤️" : "已取消收藏"}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 收入私藏弹层 */}
+      <SaveToListSheet
+        open={saveSheetOpen}
+        poi={poi}
+        photo={photos[0]}
+        onClose={() => setSaveSheetOpen(false)}
+        onSaved={() => setListTick((t) => t + 1)}
+      />
     </div>
   );
 }
