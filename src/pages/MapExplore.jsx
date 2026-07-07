@@ -4,16 +4,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { STORE_INFO, getStoreCoords, shPoi } from "../data/shanghaiStores";
-import { getListsContaining, getList, getReasonFor } from "../data/lists";
+import { getListsContaining, loadLists, effectiveCheckedOff, getListMeta } from "../data/lists";
 import { BottomTab } from "./Me";
 
-// 地图页(对齐真实点评地图样式) — 清单在地图上的分发:
-//   ① 右侧「私藏」图层开关:开启后被清单收录的店切换为书签 pin + 创作者头像
-//   ② pin 点击 → 底部对应店卡高亮(卡片带"被 N 份私藏收录"行)
-//   ③ 底部卡片流顶部:区域清单卡(视野内命中一份清单 ≥3 家店)
+// 地图页 — 清单分发的三态结构:
+//   ① 默认态:热门门店(评分 pin) + 底部门店卡
+//   ② 私藏态(点右侧「私藏」):同样的热门门店,pin 追加"被 N 份私藏收录"标记,底部变为清单列表
+//   ③ 清单态(点选一份清单):地图只呈现该清单的门店(序号 pin + 路线),底部为该清单的店卡
 const MAP_STORES = Object.keys(STORE_INFO);
 const CATE_CHIPS = ["🔥 推荐", "🍗 美食", "🍹 玩乐", "🏝 景点", "🛍 购物"];
 const CATE_EMOJI = { 特色菜: "🍽", 西餐: "🍴", 新疆菜: "🍢", 潮汕菜: "🦐", 面包烘焙: "🥐", 海鲜: "🦞", 商场: "🛍", 小吃快餐: "🥣" };
+const DEFAULT_VIEW = { center: [31.2315, 121.458], zoom: 14 };
+// 上海范围(过滤进入地图清单列表的清单)
+const inShanghai = (c) => c && c.lat > 30.8 && c.lat < 31.6 && c.lng > 121 && c.lng < 122;
 
 function Stars({ rating, size = 12 }) {
   return (
@@ -41,10 +44,12 @@ export default function MapExplore() {
   const mapRef = useRef(null);
   const markersRef = useRef(null);
   const cardRefs = useRef({});
-  const [listLayer, setListLayer] = useState(false);
+  // 三态:layerOn=false 默认态;layerOn=true 私藏态;activeListId 非空 → 清单态
+  const [layerOn, setLayerOn] = useState(false);
+  const [activeListId, setActiveListId] = useState(null);
   const [selected, setSelected] = useState(null);
 
-  // 门店 → 收录清单(一次算好)
+  // 热门门店(默认态/私藏态共用)
   const storeData = useMemo(
     () =>
       MAP_STORES.map((name) => ({
@@ -56,20 +61,46 @@ export default function MapExplore() {
     []
   );
 
-  const areaList = useMemo(() => getList("list_f_njxl_richang"), []);
+  // 地图清单列表(私藏态底部):上海范围内的公开清单
+  const mapLists = useMemo(
+    () =>
+      loadLists()
+        .filter((l) => l.visibility === "public")
+        .map((l) => ({
+          ...l,
+          points: l.items
+            .map((it, idx) => {
+              const c = getStoreCoords(it.poi?.name);
+              return c ? { ...it, idx, lat: c.lat, lng: c.lng } : null;
+            })
+            .filter(Boolean),
+        }))
+        .filter((l) => l.points.length >= 2 && l.points.every((p) => inShanghai(p)))
+        .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0)),
+    []
+  );
+
+  const activeList = useMemo(
+    () => mapLists.find((l) => l.id === activeListId) || null,
+    [mapLists, activeListId]
+  );
+  // 拔草口径(与清单页一致):仅对我收藏过的清单展示
+  const activeChecked = useMemo(() => {
+    if (!activeList) return null;
+    return getListMeta(activeList.id).saved ? effectiveCheckedOff(activeList) : null;
+  }, [activeList]);
 
   // ── 初始化地图 ──
   useEffect(() => {
     if (!mapEl.current || mapRef.current) return;
-    const map = L.map(mapEl.current, {
-      zoomControl: false,
-      attributionControl: false,
-    }).setView([31.2315, 121.458], 14);
+    const map = L.map(mapEl.current, { zoomControl: false, attributionControl: false }).setView(
+      DEFAULT_VIEW.center,
+      DEFAULT_VIEW.zoom
+    );
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       maxZoom: 19,
       subdomains: "abcd",
     }).addTo(map);
-    // 当前位置蓝点
     L.marker([31.2295, 121.4555], {
       icon: L.divIcon({
         html: `<div style="width:16px;height:16px;border-radius:50%;background:#2E7CF6;border:3px solid white;box-shadow:0 0 0 6px rgba(46,124,246,0.18), 0 2px 6px rgba(0,0,0,0.3);"></div>`,
@@ -84,57 +115,102 @@ export default function MapExplore() {
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // ── 渲染 pins(随图层/选中态刷新) ──
+  // ── 视野切换:进清单态 fit 到清单,退出回默认视野 ──
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (activeList) {
+      map.fitBounds(L.latLngBounds(activeList.points.map((p) => [p.lat, p.lng])), {
+        padding: [56, 56],
+        maxZoom: 16,
+        animate: true,
+      });
+    } else {
+      map.setView(DEFAULT_VIEW.center, DEFAULT_VIEW.zoom, { animate: true });
+    }
+  }, [activeList]);
+
+  // ── 渲染 pins(随三态刷新) ──
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     if (markersRef.current) { map.removeLayer(markersRef.current); markersRef.current = null; }
     const layer = L.layerGroup();
 
-    storeData.forEach((s) => {
-      const isSel = selected === s.name;
-      const inLists = s.lists.length > 0;
-      const shortName = s.name.length > 9 ? s.name.slice(0, 9) + "…" : s.name;
-      const nameLabel = `<div style="font-size:11px;font-weight:600;color:#1a1a1a;margin-top:2px;white-space:nowrap;text-align:center;text-shadow:0 0 3px white,0 0 3px white,0 0 3px white;">${shortName}</div>`;
-
-      let html;
-      if (listLayer && inLists) {
-        // 私藏图层:书签 pin + 创作者头像
-        const avatar = s.lists[0].owner.avatar;
-        html = `<div style="display:flex;flex-direction:column;align-items:center;width:max-content;transform:scale(${isSel ? 1.12 : 1});transition:transform .15s;">
-          <div style="display:flex;align-items:center;gap:4px;white-space:nowrap;background:linear-gradient(135deg,#FF6F00,#FFA040);border-radius:999px;padding:3px 8px 3px 4px;box-shadow:0 3px 10px rgba(255,111,0,0.45);border:1.5px solid white;">
-            <img src="${avatar}" style="width:17px;height:17px;border-radius:50%;background:white;border:1px solid white;"/>
-            <span style="font-size:11px;font-weight:700;color:white;white-space:nowrap;">🔖 ${s.lists.length} 份私藏</span>
-          </div>${nameLabel}</div>`;
-      } else {
-        // 常规评分 pin
-        const emoji = CATE_EMOJI[s.info.category] || "🍴";
-        html = `<div style="display:flex;flex-direction:column;align-items:center;width:max-content;transform:scale(${isSel ? 1.12 : 1});transition:transform .15s;opacity:${listLayer && !inLists ? 0.45 : 1};">
-          <div style="display:flex;align-items:center;gap:3px;white-space:nowrap;background:white;border-radius:999px;padding:2px 7px 2px 3px;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
-            <div style="width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#FF6F00,#FFA040);display:flex;align-items:center;justify-content:center;font-size:10px;">${emoji}</div>
-            <span style="font-size:11px;font-weight:700;color:#FF6F00;">${s.info.rating}分</span>
-          </div>${nameLabel}</div>`;
+    if (activeList) {
+      // ══ 清单态:只呈现该清单的门店(序号 pin + 虚线路线) ══
+      const latlngs = activeList.points.map((p) => [p.lat, p.lng]);
+      if (latlngs.length >= 2) {
+        L.polyline(latlngs, { color: "#ffffff", weight: 6, opacity: 0.9, lineJoin: "round", lineCap: "round", interactive: false }).addTo(layer);
+        L.polyline(latlngs, { color: "#FF6F00", weight: 3, opacity: 0.9, dashArray: "6 6", lineJoin: "round", lineCap: "round", interactive: false }).addTo(layer);
       }
-
-      const marker = L.marker([s.coords.lat, s.coords.lng], {
-        icon: L.divIcon({ html, className: "", iconSize: [0, 0], iconAnchor: [40, 16] }),
-        riseOnHover: true,
+      activeList.points.forEach((p, seq) => {
+        const done = activeChecked?.has(p.poi?.name);
+        const isSel = selected === p.poi?.name;
+        const size = isSel ? 30 : 25;
+        const shortName = p.poi.name.length > 9 ? p.poi.name.slice(0, 9) + "…" : p.poi.name;
+        const html = `<div style="display:flex;flex-direction:column;align-items:center;width:max-content;">
+          <div style="width:${size}px;height:${size}px;border-radius:50%;
+            background:${done ? "linear-gradient(135deg,#7BC142,#A5D66E)" : "linear-gradient(135deg,#FF6F00,#FFA040)"};
+            border:2.5px solid white;box-shadow:0 3px 10px ${done ? "rgba(123,193,66,0.5)" : "rgba(255,111,0,0.45)"};
+            display:flex;align-items:center;justify-content:center;color:white;font-size:${done ? 13 : 12}px;font-weight:800;">${done ? "✓" : seq + 1}</div>
+          <div style="font-size:11px;font-weight:600;color:#1a1a1a;margin-top:2px;white-space:nowrap;text-shadow:0 0 3px white,0 0 3px white,0 0 3px white;">${shortName}</div>
+        </div>`;
+        const marker = L.marker([p.lat, p.lng], {
+          icon: L.divIcon({ html, className: "", iconSize: [0, 0], iconAnchor: [size / 2, size / 2] }),
+          riseOnHover: true,
+        });
+        marker.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          setSelected(p.poi.name);
+          cardRefs.current[p.poi.name]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+        marker.addTo(layer);
       });
-      marker.on("click", (e) => {
-        L.DomEvent.stopPropagation(e);
-        setSelected(s.name);
-        // 底部对应店卡滚动到可视区
-        cardRefs.current[s.name]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } else {
+      // ══ 默认态 / 私藏态:热门门店评分 pin;私藏态在 pin 上追加收录标记 ══
+      storeData.forEach((s) => {
+        const isSel = selected === s.name;
+        const inLists = s.lists.length > 0;
+        const emoji = CATE_EMOJI[s.info.category] || "🍴";
+        const shortName = s.name.length > 9 ? s.name.slice(0, 9) + "…" : s.name;
+        // 私藏态:评分胶囊右侧拼接收录段
+        const listBadge =
+          layerOn && inLists
+            ? `<span style="display:inline-flex;align-items:center;gap:2px;background:linear-gradient(135deg,#FF6F00,#FFA040);color:white;font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px;margin-left:3px;white-space:nowrap;">🔖 ${s.lists.length}</span>`
+            : "";
+        const html = `<div style="display:flex;flex-direction:column;align-items:center;width:max-content;transform:scale(${isSel ? 1.12 : 1});transition:transform .15s;">
+          <div style="display:flex;align-items:center;gap:3px;white-space:nowrap;background:white;border-radius:999px;padding:2px 7px 2px 3px;box-shadow:0 2px 8px rgba(0,0,0,0.2);${layerOn && inLists ? "border:1.5px solid #FFB380;" : ""}">
+            <div style="width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#FF6F00,#FFA040);display:flex;align-items:center;justify-content:center;font-size:10px;">${emoji}</div>
+            <span style="font-size:11px;font-weight:700;color:#FF6F00;">${s.info.rating}分</span>${listBadge}
+          </div>
+          <div style="font-size:11px;font-weight:600;color:#1a1a1a;margin-top:2px;white-space:nowrap;text-shadow:0 0 3px white,0 0 3px white,0 0 3px white;">${shortName}</div>
+        </div>`;
+        const marker = L.marker([s.coords.lat, s.coords.lng], {
+          icon: L.divIcon({ html, className: "", iconSize: [0, 0], iconAnchor: [40, 16] }),
+          riseOnHover: true,
+        });
+        marker.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          setSelected(s.name);
+          cardRefs.current[s.name]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+        marker.addTo(layer);
       });
-      marker.addTo(layer);
-    });
+    }
 
     layer.addTo(map);
     markersRef.current = layer;
-  }, [storeData, listLayer, selected]);
+  }, [storeData, layerOn, activeList, activeChecked, selected]);
 
-  const openStore = (name) => {
-    navigate("/store", { state: { poi: shPoi(name), photo: STORE_INFO[name]?.photos?.[0] } });
+  const openStore = (name, photo, reason) => {
+    navigate("/store", { state: { poi: shPoi(name), photo, caption: reason } });
+  };
+
+  const toggleLayer = () => {
+    setSelected(null);
+    setActiveListId(null);
+    setLayerOn((v) => !v);
   };
 
   return (
@@ -143,7 +219,7 @@ export default function MapExplore() {
       <div className="relative flex-1">
         <div ref={mapEl} className="absolute inset-0" style={{ zIndex: 1 }} />
 
-        {/* 搜索条 */}
+        {/* 搜索条 + 分类 chips */}
         <div className="absolute top-3 left-3 right-3 z-10">
           <button
             onClick={() => navigate("/search")}
@@ -156,7 +232,6 @@ export default function MapExplore() {
             </svg>
             <span className="text-[14px] text-dpText-tertiary">搜索地点、美食、景点等</span>
           </button>
-          {/* 分类 chips */}
           <div className="flex gap-2 mt-2.5 overflow-x-auto no-scrollbar">
             {CATE_CHIPS.map((c, i) => (
               <span
@@ -174,26 +249,23 @@ export default function MapExplore() {
           </div>
         </div>
 
-        {/* 右侧浮动按钮:必吃榜 / 私藏图层 / 收藏 / 定位 */}
+        {/* 右侧浮动按钮 */}
         <div className="absolute right-3 bottom-4 z-10 flex flex-col gap-2 items-center">
           <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.12)" }}>
             <button className="w-12 py-2 flex flex-col items-center gap-0.5 border-b border-[#f5f5f5]">
               <span className="text-[15px]">🥇</span>
               <span className="text-[9.5px] text-dpInk">必吃榜</span>
             </button>
-            {/* 私藏图层开关(与必吃榜并列的人格图层) */}
             <button
-              onClick={() => { setListLayer((v) => !v); setSelected(null); }}
+              onClick={toggleLayer}
               className="w-12 py-2 flex flex-col items-center gap-0.5 border-b border-[#f5f5f5] relative"
-              style={listLayer ? { background: "linear-gradient(135deg, #FF6F00, #FFA040)" } : {}}
+              style={layerOn ? { background: "linear-gradient(135deg, #FF6F00, #FFA040)" } : {}}
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={listLayer ? "white" : "#E65000"} strokeWidth="2">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={layerOn ? "white" : "#E65000"} strokeWidth="2">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
               </svg>
-              <span className="text-[9.5px]" style={{ color: listLayer ? "white" : "#1a1a1a" }}>私藏</span>
-              {!listLayer && (
-                <span className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-[#FF3B30]" />
-              )}
+              <span className="text-[9.5px]" style={{ color: layerOn ? "white" : "#1a1a1a" }}>私藏</span>
+              {!layerOn && <span className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-[#FF3B30]" />}
             </button>
             <button className="w-12 py-2 flex flex-col items-center gap-0.5">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2">
@@ -210,102 +282,168 @@ export default function MapExplore() {
           </button>
         </div>
 
-        {/* 图层开启提示 */}
+        {/* 状态提示条 */}
         <AnimatePresence>
-          {listLayer && (
+          {layerOn && (
             <motion.div
+              key={activeList ? "list" : "layer"}
               initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
               className="absolute left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full text-[11px] text-white whitespace-nowrap"
               style={{ top: 104, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
             >
-              🔖 私藏图层已开启 · 只看被清单收录的店
+              {activeList ? `🚶 ${activeList.title.slice(0, 14)} · ${activeList.points.length} 站` : "🔖 已标记热门门店的私藏收录 · 在下方挑一份清单"}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* ── 底部卡片流 ── */}
+      {/* ── 底部卡片流(随三态切换) ── */}
       <div className="shrink-0 bg-white rounded-t-3xl -mt-3 relative z-10" style={{ height: 296, boxShadow: "0 -6px 24px rgba(0,0,0,0.08)" }}>
         <div className="pt-2 pb-1 flex justify-center">
           <div className="w-10 h-1 rounded-full bg-[#e5e5e5]" />
         </div>
         <div className="overflow-y-auto no-scrollbar px-3 pb-20" style={{ height: 272 }}>
-          {/* 区域清单卡:视野内命中一份清单 */}
-          {areaList && (
-            <button
-              onClick={() => navigate(`/album/${areaList.id}`)}
-              className="w-full text-left rounded-2xl p-3 mb-2 flex items-center gap-3"
-              style={{ background: "linear-gradient(135deg, #FFF6EA, #FFEDD6)", border: "1px solid #FFE0BC" }}
-            >
-              <div className="relative shrink-0">
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-white">
-                  <img src={areaList.cover} alt="" className="w-full h-full object-cover" />
+
+          {/* ══ 清单态:清单头 + 该清单的店卡 ══ */}
+          {layerOn && activeList && (
+            <>
+              <div className="rounded-2xl p-3 mb-2 flex items-center gap-3" style={{ background: "linear-gradient(135deg, #FFF6EA, #FFEDD6)", border: "1px solid #FFE0BC" }}>
+                <button onClick={() => { setActiveListId(null); setSelected(null); }} className="w-7 h-7 rounded-full bg-white/80 flex items-center justify-center shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2.5">
+                    <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13.5px] font-bold text-dpInk truncate">{activeList.title}</div>
+                  <div className="text-[10.5px] text-dpText-tertiary mt-0.5">
+                    {activeList.owner.name} · {activeList.points.length} 家店
+                    {activeChecked ? ` · 已去 ${activeList.points.filter((p) => activeChecked.has(p.poi?.name)).length}` : ""} · 藏 {activeList.saveCount}
+                  </div>
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full overflow-hidden border-2 border-white bg-white">
-                  <img src={areaList.owner.avatar} alt="" className="w-full h-full object-cover" />
-                </div>
+                <button
+                  onClick={() => navigate(`/album/${activeList.id}`)}
+                  className="shrink-0 px-3 h-7 rounded-full text-[11.5px] text-white font-medium"
+                  style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+                >
+                  完整清单
+                </button>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-medium" style={{ color: "#C8541A" }}>🔖 这一带有一份高分私藏</div>
-                <div className="text-[13.5px] font-bold text-dpInk truncate mt-0.5">{areaList.title}</div>
-                <div className="text-[10.5px] text-dpText-tertiary mt-0.5">
-                  {areaList.owner.name} · {areaList.items.length} 家店都在这片 · 藏 {areaList.saveCount}
-                </div>
-              </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E65000" strokeWidth="2" className="shrink-0">
-                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+              {activeList.points.map((p, seq) => {
+                const done = activeChecked?.has(p.poi?.name);
+                return (
+                  <button
+                    key={p.poi.name}
+                    ref={(el) => (cardRefs.current[p.poi.name] = el)}
+                    onClick={() => openStore(p.poi.name, p.photo, p.reason)}
+                    className="w-full text-left py-3 flex gap-3 border-b border-[#f7f7f7] rounded-xl px-1.5 transition-all"
+                    style={selected === p.poi.name ? { background: "#FFF8F0", boxShadow: "inset 0 0 0 1.5px #FFB380" } : {}}
+                  >
+                    <div className="relative shrink-0">
+                      <div className="w-[62px] h-[62px] rounded-xl overflow-hidden bg-[#f0f0f0]">
+                        <img src={p.photo} alt="" className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                      <div
+                        className="absolute -top-1.5 -left-1.5 w-[20px] h-[20px] rounded-full flex items-center justify-center text-white text-[11px] font-bold border-2 border-white"
+                        style={{ background: done ? "#7BC142" : "linear-gradient(135deg,#FF6F00,#FFA040)" }}
+                      >
+                        {done ? "✓" : seq + 1}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[14px] font-semibold text-dpInk truncate">{p.poi.name}</span>
+                        {done && (
+                          <span className="shrink-0 text-[9px] px-1 py-px rounded" style={{ background: "#EAF5E2", color: "#2E7D32" }}>已拔草</span>
+                        )}
+                      </div>
+                      <div className="text-[12px] text-dpInk mt-1 leading-snug" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        “{p.reason}”
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </>
           )}
 
-          {/* 门店卡片流(pin 联动高亮) */}
-          {storeData.map((s) => (
-            <button
-              key={s.name}
-              ref={(el) => (cardRefs.current[s.name] = el)}
-              onClick={() => openStore(s.name)}
-              className="w-full text-left py-3 flex gap-3 border-b border-[#f7f7f7] rounded-xl px-1.5 transition-all"
-              style={selected === s.name ? { background: "#FFF8F0", boxShadow: "inset 0 0 0 1.5px #FFB380" } : {}}
-            >
-              <div className="w-[76px] h-[76px] rounded-xl overflow-hidden bg-[#f0f0f0] shrink-0">
-                <img src={s.info.photos[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
+          {/* ══ 私藏态:清单列表 ══ */}
+          {layerOn && !activeList && (
+            <>
+              <div className="px-1 pb-2 text-[12px] text-dpText-secondary">
+                这一带的 <b className="text-dpInk">{mapLists.length} 份公开私藏</b> · 点一份看它的店
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-bold text-dpInk truncate">{s.name}</div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <Stars rating={s.info.rating} />
-                  <span className="text-[13px] font-bold text-[#FF6F00]">{s.info.rating}</span>
-                  <span className="text-[11px] text-dpText-tertiary">{s.info.reviews}条</span>
-                  {s.info.price > 0 && <span className="text-[11px] text-dpText-tertiary">¥{s.info.price}/人</span>}
-                  <span className="text-[11px] text-dpText-tertiary ml-auto shrink-0">{s.info.dist}</span>
-                </div>
-                <div className="text-[11px] text-dpText-tertiary mt-0.5 truncate">
-                  {s.info.category} {s.info.biz}
-                </div>
-                <div className="flex items-center gap-1 mt-1 flex-wrap">
-                  <span className="inline-flex items-center gap-0.5 text-[10px] px-1 py-px rounded" style={{ background: "#FFF0E5", color: "#E65000" }}>
-                    <span className="px-0.5 rounded-sm text-white text-[8.5px] font-bold" style={{ background: "#FF6F00" }}>榜</span>
-                    {s.info.badge}
-                  </span>
-                </div>
-                {/* 被收录行(地图卡片下沉收录模块) */}
-                {s.lists.length > 0 && (
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <div className="flex -space-x-1.5 shrink-0">
-                      {s.lists.slice(0, 3).map((l, i) => (
-                        <div key={l.id} className="w-4 h-4 rounded-full overflow-hidden bg-[#f5f5f5] border border-white" style={{ zIndex: 3 - i }}>
-                          <img src={l.owner.avatar} alt="" className="w-full h-full object-cover" />
-                        </div>
-                      ))}
+              {mapLists.map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => { setActiveListId(l.id); setSelected(null); }}
+                  className="w-full text-left rounded-2xl p-3 mb-2 flex items-center gap-3 bg-white"
+                  style={{ border: "1px solid #f0f0f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+                >
+                  <div className="relative shrink-0">
+                    <div className="w-[52px] h-[52px] rounded-xl overflow-hidden bg-[#f0f0f0]">
+                      <img src={l.cover} alt="" className="w-full h-full object-cover" loading="lazy" />
                     </div>
-                    <span className="text-[10.5px] truncate" style={{ color: "#E65000" }}>
-                      被 {s.lists.length} 份私藏收录 · “{getReasonFor(s.lists[0], s.name).slice(0, 16)}…”
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full overflow-hidden border-2 border-white bg-white">
+                      <img src={l.owner.avatar} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[14px] font-bold text-dpInk truncate">{l.title}</div>
+                    <div className="text-[10.5px] text-dpText-tertiary mt-0.5">
+                      {l.owner.name} · {l.points.length} 家店 · 作者全部去过 ✓
+                    </div>
+                    <div className="text-[10.5px] mt-0.5" style={{ color: "#E65000" }}>
+                      ♡ {l.likeCount} · 被收藏 {l.saveCount} 次
+                    </div>
+                  </div>
+                  <span
+                    className="shrink-0 px-2.5 h-7 rounded-full text-[11.5px] font-medium flex items-center gap-0.5"
+                    style={{ background: "#FFF0E5", color: "#E65000" }}
+                  >
+                    上图
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </button>
+              ))}
+            </>
+          )}
+
+          {/* ══ 默认态:热门门店卡 ══ */}
+          {!layerOn &&
+            storeData.map((s) => (
+              <button
+                key={s.name}
+                ref={(el) => (cardRefs.current[s.name] = el)}
+                onClick={() => openStore(s.name, s.info.photos[0])}
+                className="w-full text-left py-3 flex gap-3 border-b border-[#f7f7f7] rounded-xl px-1.5 transition-all"
+                style={selected === s.name ? { background: "#FFF8F0", boxShadow: "inset 0 0 0 1.5px #FFB380" } : {}}
+              >
+                <div className="w-[76px] h-[76px] rounded-xl overflow-hidden bg-[#f0f0f0] shrink-0">
+                  <img src={s.info.photos[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[15px] font-bold text-dpInk truncate">{s.name}</div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Stars rating={s.info.rating} />
+                    <span className="text-[13px] font-bold text-[#FF6F00]">{s.info.rating}</span>
+                    <span className="text-[11px] text-dpText-tertiary">{s.info.reviews}条</span>
+                    {s.info.price > 0 && <span className="text-[11px] text-dpText-tertiary">¥{s.info.price}/人</span>}
+                    <span className="text-[11px] text-dpText-tertiary ml-auto shrink-0">{s.info.dist}</span>
+                  </div>
+                  <div className="text-[11px] text-dpText-tertiary mt-0.5 truncate">
+                    {s.info.category} {s.info.biz}
+                  </div>
+                  <div className="flex items-center gap-1 mt-1 flex-wrap">
+                    <span className="inline-flex items-center gap-0.5 text-[10px] px-1 py-px rounded" style={{ background: "#FFF0E5", color: "#E65000" }}>
+                      <span className="px-0.5 rounded-sm text-white text-[8.5px] font-bold" style={{ background: "#FF6F00" }}>榜</span>
+                      {s.info.badge}
                     </span>
                   </div>
-                )}
-              </div>
-            </button>
-          ))}
+                </div>
+              </button>
+            ))}
         </div>
       </div>
 
