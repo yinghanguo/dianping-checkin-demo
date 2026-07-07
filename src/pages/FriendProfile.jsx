@@ -36,6 +36,37 @@ export default function FriendProfile() {
   return (
     <div className="absolute inset-0 flex flex-col bg-[#f5f5f5]">
 
+      {/* ── 顶部资料区(返回 + 头像/名字 + 关注) ── */}
+      <div
+        className="absolute top-0 left-0 right-0 px-4 pt-3"
+        style={{ height: 220, background: "linear-gradient(180deg, #FFE8C7 0%, #FFF6E5 65%, #f5f5f5 100%)" }}
+      >
+        <button onClick={() => navigate(-1)} className="w-9 h-9 -ml-2 flex items-center justify-center">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="2">
+            <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-3 mt-2 px-1">
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-white shrink-0" style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.1)" }}>
+            <img src={friend.avatar} alt="" className="w-full h-full object-cover" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[18px] font-bold text-dpInk truncate">{friend.name}</div>
+            <div className="text-[11.5px] text-dpText-secondary mt-1">
+              {friendLists.length > 0
+                ? `${friendLists.length} 份私藏公开中 · 被收藏 ${friendLists.reduce((s, l) => s + (l.saveCount || 0), 0)} 次`
+                : "美食记录"}
+            </div>
+          </div>
+          <button
+            className="shrink-0 px-4 h-8 rounded-full text-[13px] text-white font-medium"
+            style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+          >
+            关注
+          </button>
+        </div>
+      </div>
+
       {/* 月度记录浮层 */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
@@ -100,7 +131,7 @@ export default function FriendProfile() {
           <div className="text-[15px] font-semibold text-dpInk">
             {friend.name}5月美食记录
           </div>
-          <button onClick={() => navigate("/ranking")}>
+          <button onClick={() => navigate(-1)}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
               <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
             </svg>

@@ -62,17 +62,17 @@ const INITIAL_ALBUMS = [
   {
     id: "album_spain_museum",
     title: "西班牙值得去的博物馆",
-    cover: "https://images.unsplash.com/photo-1577083287686-f3f6efe9c894?w=600&q=80",
+    cover: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=600&q=80",
     createdAt: "4/30",
     items: [
       {
         poi: { name: "毕加索博物馆", city: "巴塞罗那", category: "展览馆", emoji: "🖼️" },
-        photo: "https://images.unsplash.com/photo-1577083287686-f3f6efe9c894?w=600&q=80",
+        photo: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=600&q=80",
         caption: "早年作品比晚期更让我震撼，建议留2小时",
       },
       {
         poi: { name: "加泰罗尼亚国家艺术博物馆", city: "巴塞罗那", category: "展览馆", emoji: "🖼️" },
-        photo: "https://images.unsplash.com/photo-1565060169187-5284992a47ea?w=600&q=80",
+        photo: "https://images.unsplash.com/photo-1580502304784-8985b7eb7260?w=600&q=80",
         caption: "建筑本身就值回票价，俯瞰巴塞的视角无敌",
       },
       {
@@ -82,7 +82,7 @@ const INITIAL_ALBUMS = [
       },
       {
         poi: { name: "圣家族大教堂", city: "巴塞罗那", category: "宗教建筑", emoji: "⛪" },
-        photo: "https://images.unsplash.com/photo-1583779457094-ab6f80d80ba9?w=600&q=80",
+        photo: "https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=600&q=80",
         caption: "140年还没建完，内部光线是最惊艳的部分，一定要买诞生立面的票",
       },
       {

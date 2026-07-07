@@ -7,7 +7,7 @@ import { getUserCheckins } from "../utils/userCheckins";
 import {
   getMyLists,
   getSavedLists,
-  getListMeta,
+  effectiveCheckedOff,
   buildCoffeeDraft,
   countCoffeeCheckins,
 } from "../data/lists";
@@ -151,24 +151,27 @@ export default function Me() {
           </div>
         </div>
 
-        {/* ── 数据卡片三联 ── */}
+        {/* ── 数据卡片三联:足迹(去过哪) · 收藏含清单(留下什么) · 口味(吃成什么样) ── */}
         <div className="px-3 grid grid-cols-3 gap-2 mt-1">
-          {/* 我的足迹 */}
+          {/* 打卡足迹(打卡与足迹合并:打卡是动词,足迹是资产) */}
           <DataCard
-            title="我的足迹"
-            primary={`${stats.countryCount}`}
-            primaryUnit="去过国家"
-            secondary={`${stats.cityCount}`}
-            secondaryUnit="去过城市"
-            decorEmoji="✈️"
-          />
-          {/* 打卡 (核心入口) */}
-          <DataCard
-            title="打卡"
+            title="打卡足迹"
             primary={`${stats.totalCheckins}`}
             primaryUnit="累计打卡"
+            secondary={`${stats.countryCount} 国 ${stats.cityCount} 城`}
+            secondaryUnit=""
             decorEmoji="📍"
             onClick={() => navigate("/footprint")}
+          />
+          {/* 收藏(含清单) */}
+          <DataCard
+            title="收藏"
+            primary={`${new Set(myLists.flatMap((l) => l.items.map((i) => i.poi?.name))).size}`}
+            primaryUnit="家店"
+            secondary={`${myLists.length}`}
+            secondaryUnit="份清单"
+            decorEmoji="🔖"
+            onClick={() => navigate("/collection")}
           />
           {/* 口味档案 */}
           <DataCard
@@ -228,12 +231,12 @@ export default function Me() {
           <div className="grid grid-cols-5 gap-2">
             {[
               { icon: "📦", label: "订单" },
-              { icon: "🔖", label: "私藏" },
+              { icon: "🔖", label: "收藏", onClick: () => navigate("/collection") },
               { icon: "📍", label: "地点标记" },
               { icon: "🎫", label: "卡券" },
               { icon: "📝", label: "待评价" },
             ].map((f) => (
-              <button key={f.label} className="flex flex-col items-center gap-1 relative">
+              <button key={f.label} onClick={f.onClick} className="flex flex-col items-center gap-1 relative">
                 <div className="w-[42px] h-[42px] rounded-full bg-dpOrange-bg flex items-center justify-center text-2xl relative">
                   {f.icon}
                   {f.redDot && (
@@ -358,10 +361,8 @@ export default function Me() {
                 <>
                   <div className="text-[13px] font-semibold text-dpInk mt-4 mb-2">收藏的清单</div>
                   {savedLists.map((l) => {
-                    const meta = getListMeta(l.id);
-                    const done = l.items.filter((it) =>
-                      (meta.checkedOff || []).includes(it.poi?.name)
-                    ).length;
+                    const checked = effectiveCheckedOff(l);
+                    const done = l.items.filter((it) => checked.has(it.poi?.name)).length;
                     return (
                       <button
                         key={l.id}

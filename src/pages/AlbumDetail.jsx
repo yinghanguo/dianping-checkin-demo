@@ -11,6 +11,8 @@ import {
   beenThereStats,
   publicEligibility,
   getPublicListsOf,
+  effectiveCheckedOff,
+  iHaveBeenTo,
 } from "../data/lists";
 import { MY_CHECKINS } from "../data/myCheckins";
 import CheckinMap from "../components/CheckinMap";
@@ -34,7 +36,11 @@ export default function AlbumDetail() {
   const isMine = list?.owner?.id === "me";
   const stats = list ? beenThereStats(list) : { been: 0, total: 0, all: false };
   const eligibility = list ? publicEligibility(list) : { ok: false, missing: [] };
-  const checkedSet = new Set(meta.checkedOff || []);
+  // 拔草进度唯一口径:手动勾选 ∪ 我的真实打卡(与收藏页/Me 页一致)
+  const checkedSet = useMemo(
+    () => (list ? effectiveCheckedOff(list) : new Set()),
+    [list, tick] // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const checkedCount = list ? list.items.filter((it) => checkedSet.has(it.poi?.name)).length : 0;
 
   const otherLists = useMemo(
@@ -101,7 +107,7 @@ export default function AlbumDetail() {
 
   return (
     <div className="absolute inset-0 bg-white flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-28">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-10">
 
         {/* ── Cover header ── */}
         <CoverHeader
@@ -113,6 +119,12 @@ export default function AlbumDetail() {
           menuOpen={menuOpen}
           onEdit={() => { setMenuOpen(false); navigate(`/album/${id}/edit`); }}
           onDelete={() => { setMenuOpen(false); setConfirmDelete(true); }}
+          liked={meta.liked}
+          likeCount={likeDisplay}
+          onLike={handleLike}
+          saved={meta.saved}
+          onSave={handleSave}
+          onShare={() => navigate(`/wechat-share/${id}`)}
         />
 
         {/* ── Title + trust ── */}
@@ -130,10 +142,10 @@ export default function AlbumDetail() {
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="3">
                   <path d="M5 12l5 5 9-9" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                全部去过
+                {isMine ? "全部去过" : "作者全部去过"}
               </span>
             ) : (
-              <span className="text-dpText-tertiary">{stats.been} 家去过</span>
+              <span className="text-dpText-tertiary">{isMine ? `去过 ${stats.been} 家` : `作者去过 ${stats.been} 家`}</span>
             )}
             <span className="text-[#e0e0e0]">·</span>
             <span className="text-dpText-tertiary">更新于 {list.updatedAt}</span>
@@ -205,9 +217,9 @@ export default function AlbumDetail() {
               <span className="text-[12.5px] font-medium text-[#3a6b1a]">
                 {checkedCount === list.items.length
                   ? "这份私藏你已吃完 🎉"
-                  : `拔草进度 · 已去 ${checkedCount}/${list.items.length}`}
+                  : `我的拔草 · 已去 ${checkedCount}/${list.items.length}`}
               </span>
-              <span className="text-[10.5px] text-[#7a9e5c]">勾选你去过的店</span>
+              <span className="text-[10.5px] text-[#7a9e5c]">打卡过的店自动算去过</span>
             </div>
             <div className="mt-2 h-1.5 rounded-full bg-[#E8F0E0] overflow-hidden">
               <div
@@ -265,10 +277,14 @@ export default function AlbumDetail() {
                       <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
-                  {/* 拔草勾选(收藏者) */}
+                  {/* 拔草勾选(收藏者);打卡过的店自动勾选,不可取消 */}
                   {!isMine && meta.saved && (
                     <button
-                      onClick={() => handleCheckOff(item.poi.name)}
+                      onClick={() =>
+                        iHaveBeenTo(item.poi.name)
+                          ? showToast("这家你打过卡，自动算去过 ✓")
+                          : handleCheckOff(item.poi.name)
+                      }
                       className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center border-2 transition-all ${
                         checked ? "border-[#7BC142] bg-[#7BC142]" : "border-[#ddd] bg-white"
                       }`}
@@ -352,68 +368,14 @@ export default function AlbumDetail() {
         </div>
       </div>
 
-      {/* ── 底部互动条 ── */}
-      <div
-        className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#f5f5f5] px-4 pt-3 flex items-center gap-3"
-        style={{ paddingBottom: 32 }}
-      >
-        {/* 点赞 */}
-        <button onClick={handleLike} className="flex flex-col items-center gap-0.5 min-w-[46px]">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill={meta.liked ? "#FF6F00" : "none"} stroke={meta.liked ? "#FF6F00" : "#999"} strokeWidth="2">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span className="text-[10px]" style={{ color: meta.liked ? "#FF6F00" : "#999" }}>
-            {likeDisplay > 0 ? likeDisplay : "点赞"}
-          </span>
-        </button>
-
-        {isMine ? (
-          <>
-            <button
-              onClick={() => showToast("链接已复制，快发给朋友吧 🎉")}
-              className="flex-1 h-11 rounded-full text-white text-[15px] font-medium flex items-center justify-center gap-2"
-              style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)", boxShadow: "0 4px 16px rgba(255,111,0,0.3)" }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
-              </svg>
-              分享给朋友
-            </button>
-            {list.visibility === "private" && (
-              <button
-                onClick={() => (eligibility.ok ? setPublishSheet(true) : showToast(`还差一步：${eligibility.missing[0]}`))}
-                className="shrink-0 px-4 h-11 rounded-full text-[14px] font-medium flex items-center"
-                style={{ border: "1.5px solid #FF6F00", color: "#E65000" }}
-              >
-                公开
-              </button>
-            )}
-          </>
-        ) : (
-          <button
-            onClick={handleSave}
-            className="flex-1 h-11 rounded-full text-[15px] font-medium flex items-center justify-center gap-2"
-            style={
-              meta.saved
-                ? { border: "1.5px solid #e5e5e5", color: "#666", background: "white" }
-                : { background: "linear-gradient(135deg, #FF6F00, #FFA040)", color: "white", boxShadow: "0 4px 16px rgba(255,111,0,0.3)" }
-            }
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill={meta.saved ? "#FF6F00" : "none"} stroke={meta.saved ? "#FF6F00" : "white"} strokeWidth="2">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
-            </svg>
-            {meta.saved ? "已收藏 · 更新会提醒你" : "收藏这份私藏"}
-          </button>
-        )}
-      </div>
+      {/* 互动区已上移到封面右上角(点赞/收藏/分享);私密清单的「公开」由达标引导条与编辑器承担 */}
 
       {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-            className="absolute bottom-28 left-1/2 -translate-x-1/2 whitespace-nowrap px-4 py-2 rounded-full text-white text-[13px] z-[105]"
+            className="absolute bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap px-4 py-2 rounded-full text-white text-[13px] z-[105]"
             style={{ background: "rgba(0,0,0,0.72)" }}
           >
             {toast}
@@ -486,8 +448,12 @@ export default function AlbumDetail() {
   );
 }
 
-// ── Cover header:私密/公开徽标 + 创作者菜单 ──
-function CoverHeader({ cover, isMine, visibility, onBack, onMenu, menuOpen, onEdit, onDelete }) {
+// ── Cover header:私密/公开徽标 + 右上角互动区(点赞/收藏/分享) + 创作者菜单 ──
+function CoverHeader({
+  cover, isMine, visibility, onBack, onMenu, menuOpen, onEdit, onDelete,
+  liked, likeCount, onLike, saved, onSave, onShare,
+}) {
+  const pill = { background: "rgba(0,0,0,0.32)", backdropFilter: "blur(8px)" };
   return (
     <div className="relative overflow-hidden shrink-0" style={{ height: 240 }}>
       {cover ? (
@@ -533,12 +499,43 @@ function CoverHeader({ cover, isMine, visibility, onBack, onMenu, menuOpen, onEd
         </div>
       )}
 
+      {/* 右上角互动区:点赞 / 收藏(他人清单) / 分享 / 菜单(创作者) */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        {/* 点赞 */}
+        <button onClick={onLike} className="h-9 px-2.5 rounded-full flex items-center gap-1" style={pill}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={liked ? "#FF6F00" : "none"} stroke={liked ? "#FF6F00" : "white"} strokeWidth="2">
+            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="text-[12px]" style={{ color: liked ? "#FFB380" : "white" }}>
+            {likeCount > 0 ? likeCount : "赞"}
+          </span>
+        </button>
+        {/* 收藏(仅他人清单) */}
+        {!isMine && (
+          <button onClick={onSave} className="h-9 px-2.5 rounded-full flex items-center gap-1" style={pill}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? "#FF6F00" : "none"} stroke={saved ? "#FF6F00" : "white"} strokeWidth="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+            </svg>
+            <span className="text-[12px]" style={{ color: saved ? "#FFB380" : "white" }}>
+              {saved ? "已收藏" : "收藏"}
+            </span>
+          </button>
+        )}
+        {/* 分享 */}
+        <button onClick={onShare} className="w-9 h-9 rounded-full flex items-center justify-center" style={pill}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+            <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+            <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+          </svg>
+        </button>
+      </div>
+
       {isMine && (
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-[60px] right-4 z-10">
           <button
             onClick={onMenu}
             className="w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.28)", backdropFilter: "blur(8px)" }}
+            style={pill}
           >
             <svg width="18" height="4" viewBox="0 0 18 4" fill="white">
               <circle cx="2" cy="2" r="2" /><circle cx="9" cy="2" r="2" /><circle cx="16" cy="2" r="2" />

@@ -3,10 +3,12 @@
 //   - 新增 visibility(私密/公开)、每店一句话理由 reason(沿用 caption)、beenThere 去过标
 //   - 新增互动(点赞/收藏/订阅)与拔草(checkOff)，存在独立的 meta 存储里
 import { MY_CHECKINS } from "./myCheckins";
+import { SH_IMG, shPoi } from "./shanghaiStores";
 
-const STORAGE_KEY = "dp_lists_v1";
+const STORAGE_KEY = "dp_lists_v2"; // v2:加入上海南京西路清单数据
 const META_KEY = "dp_list_meta_v1";
 const LEGACY_ALBUM_KEY = "dp_albums";
+const LEGACY_LIST_KEY = "dp_lists_v1";
 
 export const ME = {
   id: "me",
@@ -95,7 +97,7 @@ const MY_INITIAL_LISTS = [
     owner: ME,
     title: "西班牙值得去的博物馆",
     description: "",
-    cover: "https://images.unsplash.com/photo-1577083287686-f3f6efe9c894?w=600&q=80",
+    cover: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=600&q=80",
     visibility: "private",
     likeCount: 0,
     saveCount: 0,
@@ -104,12 +106,12 @@ const MY_INITIAL_LISTS = [
     items: [
       {
         poi: { name: "毕加索博物馆", city: "巴塞罗那", category: "展览馆", emoji: "🖼️" },
-        photo: "https://images.unsplash.com/photo-1577083287686-f3f6efe9c894?w=600&q=80",
+        photo: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=600&q=80",
         reason: "早年作品比晚期更让我震撼，建议留2小时",
       },
       {
         poi: { name: "加泰罗尼亚国家艺术博物馆", city: "巴塞罗那", category: "展览馆", emoji: "🖼️" },
-        photo: "https://images.unsplash.com/photo-1565060169187-5284992a47ea?w=600&q=80",
+        photo: "https://images.unsplash.com/photo-1580502304784-8985b7eb7260?w=600&q=80",
         reason: "建筑本身就值回票价，俯瞰巴塞的视角无敌",
       },
       {
@@ -119,7 +121,7 @@ const MY_INITIAL_LISTS = [
       },
       {
         poi: { name: "圣家族大教堂", city: "巴塞罗那", category: "宗教建筑", emoji: "⛪" },
-        photo: "https://images.unsplash.com/photo-1583779457094-ab6f80d80ba9?w=600&q=80",
+        photo: "https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=600&q=80",
         reason: "140年还没建完，内部光线是最惊艳的部分，一定要买诞生立面的票",
       },
       {
@@ -136,6 +138,128 @@ const friendAvatar = (name, bg) =>
   `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name)}&backgroundColor=${bg}`;
 
 const FRIEND_LISTS = [
+  // ── 上海 · 南京西路(核心演示数据:门店在多份清单间刻意重叠) ──
+  {
+    id: "list_f_njxl_richang",
+    owner: { id: "friend-2", name: "日酱", avatar: friendAvatar("日酱", "ffdfbf"), level: "Lv.7" },
+    title: "南京西路，我只带朋友去这几家",
+    description: "在南西上班第四年。游客去丰盛里打卡，我去这几家续命。",
+    cover: SH_IMG.lighthouse,
+    visibility: "public",
+    likeCount: 1562,
+    saveCount: 623,
+    createdAt: "3/18",
+    updatedAt: "7/2",
+    allBeenThere: true,
+    items: [
+      {
+        poi: shPoi("贰楼 The Lighthouse-亚洲小馆(丰盛里店)"),
+        photo: SH_IMG.lighthouse,
+        reason: "新店开业就去了三次，柠檬叶烤鱼是全上海最像曼谷的味道",
+        beenThere: true,
+      },
+      {
+        poi: shPoi("Bco豆库(南京西路店)"),
+        photo: SH_IMG.bco,
+        reason: "靠窗位下午三点的光最好，豆乳盒子配美式，工作日也值得排",
+        beenThere: true,
+      },
+      {
+        poi: shPoi("SOSO盐面包"),
+        photo: SH_IMG.soso,
+        reason: "盐面包 14:30 出炉，掐点去还是热的，一次买三个不后悔",
+        beenThere: true,
+      },
+      {
+        poi: shPoi("游牧Bistro小酒馆 by 耶里"),
+        photo: SH_IMG.youmu,
+        reason: "晚霞时段的玻璃房比西餐厅浪漫，人均还不过百三",
+        beenThere: true,
+      },
+    ],
+  },
+  {
+    id: "list_f_sh_qingke",
+    owner: {
+      id: "friend-1",
+      name: "一只美食界的Zoe...",
+      avatar: friendAvatar("一只美食界的Zoe...", "b6e3f4"),
+      level: "Lv.8",
+    },
+    title: "上海请客不出错的馆子",
+    description: "请客的标准和自己吃不一样：环境撑得住、菜单没有雷、不用赌运气。",
+    cover: SH_IMG.donghai,
+    visibility: "public",
+    likeCount: 2874,
+    saveCount: 1105,
+    createdAt: "1/20",
+    updatedAt: "6/29",
+    allBeenThere: true,
+    items: [
+      {
+        poi: shPoi("东海滙舟山海鲜"),
+        photo: SH_IMG.donghai,
+        reason: "必吃榜连着上了三年，海鲜按只点不宰客，长辈也满意",
+        beenThere: true,
+      },
+      {
+        poi: shPoi("神更仔·潮汕魂大排档(汉口路店)"),
+        photo: SH_IMG.shengengzai,
+        reason: "生腌天花板，带外地朋友来从没失过手",
+        beenThere: true,
+      },
+      {
+        poi: shPoi("贰楼 The Lighthouse-亚洲小馆(丰盛里店)"),
+        photo: SH_IMG.lighthouse2,
+        reason: "丰盛里二楼，环境撑得起正式饭局，人均262但值回",
+        beenThere: true,
+      },
+      {
+        poi: shPoi("游牧Bistro小酒馆 by 耶里"),
+        photo: SH_IMG.youmu,
+        reason: "大盘鸡端上来那一刻全桌都安静了，记得订玻璃房",
+        beenThere: true,
+      },
+    ],
+  },
+  {
+    id: "list_f_shenye",
+    owner: {
+      id: "friend-8",
+      name: "坏蛋bobo",
+      avatar: friendAvatar("坏蛋bobo", "ffcfd2"),
+      level: "Lv.6",
+    },
+    title: "加班后的深夜食堂",
+    description: "十点后下班的人，值得一顿热的。",
+    cover: SH_IMG.shengengzai,
+    visibility: "public",
+    likeCount: 986,
+    saveCount: 412,
+    createdAt: "4/2",
+    updatedAt: "6/18",
+    allBeenThere: true,
+    items: [
+      {
+        poi: shPoi("神更仔·潮汕魂大排档(汉口路店)"),
+        photo: SH_IMG.shengengzai,
+        reason: "凌晨一点半还在排队，砂锅粥是加班人的救命汤",
+        beenThere: true,
+      },
+      {
+        poi: shPoi("老绍兴豆浆油条"),
+        photo: SH_IMG.laoshaoxing,
+        reason: "凌晨四点开门，夜班人的早餐是别人的宵夜",
+        beenThere: true,
+      },
+      {
+        poi: { name: "安福路小酒馆", city: "上海", category: "酒吧", emoji: "🍸" },
+        photo: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&q=80",
+        reason: "十一点后还放人进去坐的安静酒馆，老板娘不催单",
+        beenThere: true,
+      },
+    ],
+  },
   {
     id: "list_f_bcn_coffee",
     owner: { id: "friend-2", name: "日酱", avatar: friendAvatar("日酱", "ffdfbf"), level: "Lv.7" },
@@ -255,6 +379,12 @@ const FRIEND_LISTS = [
         reason: "下午三点的靠窗位，是我心里梧桐区的最佳座位",
         beenThere: true,
       },
+      {
+        poi: shPoi("游牧Bistro小酒馆 by 耶里"),
+        photo: SH_IMG.youmu,
+        reason: "玻璃房要提前两天订，日落时分谁坐谁知道",
+        beenThere: true,
+      },
     ],
   },
 ];
@@ -297,6 +427,17 @@ function seed() {
           items: (a.items || []).map((it) => ({ poi: it.poi, photo: it.photo, reason: it.caption || "" })),
         }));
       myLists = [...extras, ...MY_INITIAL_LISTS];
+    }
+  } catch {}
+  // v1 → v2 迁移:保留用户在 v1 里自建的清单(id 为时间戳后缀)
+  try {
+    const v1 = localStorage.getItem(LEGACY_LIST_KEY);
+    if (v1) {
+      const prev = JSON.parse(v1);
+      const userMade = prev.filter(
+        (l) => l.owner?.id === "me" && /^list_\d+$/.test(l.id)
+      );
+      myLists = [...userMade, ...myLists];
     }
   } catch {}
   const all = [...myLists, ...FRIEND_LISTS];
@@ -411,6 +552,16 @@ export function toggleCheckOff(listId, poiName) {
 export function getSavedLists() {
   const meta = readMeta();
   return loadLists().filter((l) => l.owner?.id !== "me" && meta[l.id]?.saved);
+}
+
+// 我的拔草进度(唯一口径,所有页面共用):手动勾选 ∪ 我的真实打卡
+// —— 打卡过的店自动算去过,避免"顶部说全部去过、进度却是 0"的口径混乱
+export function effectiveCheckedOff(list) {
+  const manual = new Set(getListMeta(list.id).checkedOff || []);
+  list.items.forEach((it) => {
+    if (iHaveBeenTo(it.poi?.name)) manual.add(it.poi.name);
+  });
+  return manual;
 }
 
 // ── AI 存量转化:从打卡记录生成咖啡清单草稿 ──
