@@ -390,10 +390,22 @@ const FRIEND_LISTS = [
 ];
 
 // ── 存储 ──
+// 历史入库数据里的失效图片 → 可用替代(幂等,读取时统一修复)
+const DEAD_IMG_FIXES = [
+  ["photo-1577083287686-f3f6efe9c894", "photo-1554907984-15263bfd63bd"],
+  ["photo-1565060169187-5284992a47ea", "photo-1580502304784-8985b7eb7260"],
+  ["photo-1583779457094-ab6f80d80ba9", "photo-1523531294919-4bcd7c65e216"],
+];
+
 function readStore() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      DEAD_IMG_FIXES.forEach(([bad, good]) => {
+        raw = raw.split(bad).join(good);
+      });
+      return JSON.parse(raw);
+    }
   } catch {}
   return null;
 }

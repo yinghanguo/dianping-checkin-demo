@@ -10,7 +10,7 @@ import Edit from "./pages/Edit";
 import Success from "./pages/Success";
 import Me from "./pages/Me";
 import Footprint from "./pages/Footprint";
-import MapPlaceholder from "./pages/MapPlaceholder";
+import MapExplore from "./pages/MapExplore";
 import Ranking from "./pages/Ranking";
 import FriendProfile from "./pages/FriendProfile";
 import AlbumDetail from "./pages/AlbumDetail";
@@ -35,7 +35,7 @@ export default function App() {
               <Route path="/success" element={<Success />} />
               <Route path="/me" element={<Me />} />
               <Route path="/footprint" element={<Footprint />} />
-              <Route path="/map" element={<MapPlaceholder />} />
+              <Route path="/map" element={<MapExplore />} />
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/friend-profile" element={<FriendProfile />} />
               <Route path="/album/create" element={<AlbumCreate />} />

@@ -17,6 +17,7 @@ export const SH_IMG = {
 // 门店档案:门店详情页命中 name 时用真实信息覆盖 mock 生成
 export const STORE_INFO = {
   "贰楼 The Lighthouse-亚洲小馆(丰盛里店)": {
+    coords: { lat: 31.2340, lng: 121.4565 },
     rating: 4.1,
     reviews: 60,
     price: 262,
@@ -37,6 +38,7 @@ export const STORE_INFO = {
     photos: [SH_IMG.lighthouse, SH_IMG.lighthouse2],
   },
   "Bco豆库(南京西路店)": {
+    coords: { lat: 31.2277, lng: 121.4443 },
     rating: 4.6,
     reviews: 3392,
     price: 126,
@@ -54,6 +56,7 @@ export const STORE_INFO = {
     photos: [SH_IMG.bco],
   },
   "游牧Bistro小酒馆 by 耶里": {
+    coords: { lat: 31.2330, lng: 121.4614 },
     rating: 4.8,
     reviews: 3118,
     price: 125,
@@ -74,6 +77,7 @@ export const STORE_INFO = {
     photos: [SH_IMG.youmu],
   },
   "神更仔·潮汕魂大排档(汉口路店)": {
+    coords: { lat: 31.2358, lng: 121.4795 },
     rating: 4.3,
     reviews: 21307,
     price: 110,
@@ -94,6 +98,7 @@ export const STORE_INFO = {
     photos: [SH_IMG.shengengzai],
   },
   "SOSO盐面包": {
+    coords: { lat: 31.2300, lng: 121.4525 },
     rating: 4.5,
     reviews: 1286,
     price: 32,
@@ -111,6 +116,7 @@ export const STORE_INFO = {
     photos: [SH_IMG.soso],
   },
   "东海滙舟山海鲜": {
+    coords: { lat: 31.2405, lng: 121.4525 },
     rating: 4.7,
     reviews: 8452,
     price: 328,
@@ -128,6 +134,7 @@ export const STORE_INFO = {
     photos: [SH_IMG.donghai],
   },
   "丰盛里": {
+    coords: { lat: 31.2362, lng: 121.4598 },
     rating: 4.9,
     reviews: 4984,
     price: 0,
@@ -145,6 +152,7 @@ export const STORE_INFO = {
     photos: [SH_IMG.fengshengli],
   },
   "老绍兴豆浆油条": {
+    coords: { lat: 31.2145, lng: 121.4855 },
     rating: 4.4,
     reviews: 5211,
     price: 18,
@@ -162,6 +170,18 @@ export const STORE_INFO = {
     photos: [SH_IMG.laoshaoxing],
   },
 };
+
+// 虚构门店的坐标(梧桐区,清单地图用)
+export const EXTRA_COORDS = {
+  "安福路小酒馆": { lat: 31.2198, lng: 121.4372 },
+  "小满手工粉": { lat: 31.2215, lng: 121.441 },
+  "永康路咖啡角": { lat: 31.209, lng: 121.453 },
+};
+
+// 统一取坐标:真实档案 → 虚构补充
+export function getStoreCoords(name) {
+  return STORE_INFO[name]?.coords || EXTRA_COORDS[name] || null;
+}
 
 // 便捷构造 poi 对象
 export function shPoi(name) {

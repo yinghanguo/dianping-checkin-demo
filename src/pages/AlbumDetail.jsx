@@ -15,7 +15,7 @@ import {
   iHaveBeenTo,
 } from "../data/lists";
 import { MY_CHECKINS } from "../data/myCheckins";
-import CheckinMap from "../components/CheckinMap";
+import ListMap from "../components/ListMap";
 
 // 私藏清单详情页(消费主场景)
 // - 创作者条 + 信任条(N 家店 · 去过) + 互动条(赞/收藏订阅/分享)
@@ -47,13 +47,6 @@ export default function AlbumDetail() {
     () => (list && !isMine ? getPublicListsOf(list.owner.name).filter((l) => l.id !== id) : []),
     [list, isMine, id]
   );
-
-  const mapCheckins = useMemo(() => {
-    if (!list) return [];
-    return list.items
-      .map((item) => MY_CHECKINS.find((c) => c.poi.name === item.poi.name))
-      .filter(Boolean);
-  }, [list]);
 
   if (!list) {
     return (
@@ -319,15 +312,19 @@ export default function AlbumDetail() {
           })}
         </div>
 
-        {/* ── Map ── */}
-        {mapCheckins.length > 0 && (
-          <div className="px-4 pt-2 pb-5 border-t border-[#f5f5f5]">
-            <div className="text-[13px] font-medium text-dpText-secondary mb-3">清单地点</div>
-            <div className="rounded-2xl overflow-hidden" style={{ height: 200 }}>
-              <CheckinMap checkins={mapCheckins} height={200} />
-            </div>
+        {/* ── 清单地图模式:序号 pin + 拔草状态 + 可走的路线 ── */}
+        <div className="px-4 pt-4 pb-5 border-t border-[#f5f5f5]">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[14px] font-semibold text-dpInk">清单地图</span>
+            <span className="text-[10.5px] text-dpText-tertiary">按顺序连成路线，照着走就行</span>
           </div>
-        )}
+          <ListMap
+            list={list}
+            checkedSet={!isMine && meta.saved ? checkedSet : null}
+            height={220}
+            onStoreClick={handlePoiClick}
+          />
+        </div>
 
         {/* ── TA 的其他私藏 ── */}
         {otherLists.length > 0 && (
