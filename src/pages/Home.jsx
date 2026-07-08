@@ -1,62 +1,60 @@
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import StatusBar from "../components/StatusBar";
 import Following from "./Following";
+import { getList, beenThereStats } from "../data/lists";
+import { STORE_INFO, SH_IMG, shPoi } from "../data/shanghaiStores";
 
-// 大众点评首页（精简版）：保留视觉感，重点突出底部加号入口
+// 大众点评首页(对齐真实样式):顶部 Tab、搜索条、分类宫格、点评榜单/免费试双卡、双列瀑布流
+// 清单植入:信息流清单卡片(四宫格封面+人格化头像前置)
 export default function Home() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") === "following" ? "following" : "city";
-  const [topTab, setTopTab] = useState(initialTab); // "following" | "city"
+  const [topTab, setTopTab] = useState(initialTab);
 
-  // 顶部分类（参考真实点评首页）
   const categories = [
-    { icon: "🍴", label: "美食" },
-    { icon: "🛍️", label: "丽人" },
-    { icon: "🎬", label: "电影" },
-    { icon: "🏨", label: "酒店" },
-    { icon: "✈️", label: "周边游" },
-    { icon: "🎮", label: "休闲玩乐" },
-    { icon: "🏥", label: "医疗" },
-    { icon: "🏠", label: "家装" },
-    { icon: "💰", label: "团购" },
-    { icon: "📚", label: "更多" },
+    { icon: "🍗", label: "美食", to: "/food" },
+    { icon: "🍹", label: "休闲玩乐" },
+    { icon: "🏨", label: "酒店民宿" },
+    { icon: "🏝️", label: "景点游玩" },
+    { icon: "🐱", label: "电影演出" },
+    { icon: "💆", label: "医美" },
+    { icon: "🉐", label: "特价团" },
+    { icon: "🛍️", label: "商场购物" },
+    { icon: "🦶", label: "按摩足疗" },
+    { icon: "💇", label: "丽人美发" },
   ];
 
-  // 信息流卡片
   const feeds = [
+    {
+      title: "没想到开年后，上海的第一家排队网红店竟是这里",
+      author: "S.Y.D.又饿了",
+      lv: "Lv8",
+      likes: "74",
+      cover: SH_IMG.lighthouse,
+      tag: "669m",
+      poi: "贰楼 The Lighthouse-亚洲小馆(丰盛里店)",
+    },
     {
       title: "上海最值得二刷的咖啡馆，这家排第一",
       author: "咖啡星人小白",
       likes: "2.3w",
-      cover:
-        "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80",
+      cover: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80",
       tag: "咖啡馆",
     },
     {
       title: "周末探店 | 静安寺这家融合菜真的绝了",
       author: "Niki",
       likes: "8.6k",
-      cover:
-        "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80",
+      cover: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80",
       tag: "美食",
-    },
-    {
-      title: "上海city walk路线｜法租界一日游攻略",
-      author: "走遍上海",
-      likes: "1.2w",
-      cover:
-        "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80",
-      tag: "周边游",
     },
     {
       title: "新晋网红｜安福路的这家小酒馆",
       author: "夜行者",
       likes: "5.4k",
-      cover:
-        "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&q=80",
+      cover: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&q=80",
       tag: "酒吧",
     },
   ];
@@ -64,12 +62,12 @@ export default function Home() {
   return (
     <div className="absolute inset-0 bg-white flex flex-col">
 
-      {/* 顶部 Tab 栏 */}
-      <div className="px-3 pt-4 pb-2 bg-white flex items-center gap-0">
+      {/* ── 顶部 Tab 栏 ── */}
+      <div className="px-3 pt-4 pb-1 bg-white flex items-center gap-0">
         <div className="flex items-center gap-4 overflow-x-auto no-scrollbar flex-1">
           <button
             onClick={() => setTopTab("following")}
-            className={`shrink-0 text-[15px] pb-1 relative ${
+            className={`shrink-0 text-[16px] pb-1 relative ${
               topTab === "following" ? "text-dpInk font-bold" : "text-dpText-secondary"
             }`}
           >
@@ -80,136 +78,144 @@ export default function Home() {
           </button>
           <button
             onClick={() => setTopTab("city")}
-            className={`shrink-0 text-[15px] pb-1 relative flex items-center gap-0.5 ${
+            className={`shrink-0 text-[16px] pb-1 relative flex items-center gap-0.5 ${
               topTab === "city" ? "text-dpInk font-bold" : "text-dpText-secondary"
             }`}
           >
-            <span className="text-[10px]">◎</span>上海
+            上海<span className="text-[9px] mt-0.5">▾</span>
             {topTab === "city" && (
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-dpOrange rounded-full" />
             )}
           </button>
-          {["附近", "品质外卖", "热点", "美食", "周末"].map((t) => (
-            <button key={t} className="shrink-0 text-[15px] pb-1 text-dpText-secondary">
+          {["附近", "品质外卖", "热点", "周末去哪", "旅"].map((t) => (
+            <button key={t} className="shrink-0 text-[16px] pb-1 text-dpText-secondary">
               {t}
             </button>
           ))}
         </div>
       </div>
 
-      {/* 顶部搜索区(关注 tab 时隐藏) */}
-      <div className={`px-3 pt-1 pb-3 bg-white ${topTab === "following" ? "hidden" : ""}`}>
-        <div className="flex items-center gap-2">
-          {/* 定位 */}
-          <div className="flex items-center gap-0.5 text-[15px] font-medium text-dpInk shrink-0">
-            <span>上海</span>
-            <span className="text-dpText-tertiary text-xs">▼</span>
-          </div>
-          {/* 搜索框 */}
-          <div className="flex-1 h-9 bg-[#F5F5F5] rounded-full flex items-center px-3 gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke="#999" strokeWidth="2" />
-              <path d="M20 20L17 17" stroke="#999" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span className="text-[13px] text-dpText-tertiary">搜索店名/地点/品类</span>
-          </div>
-          <button className="w-7 h-7 flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M5 3L9 7M19 3L15 7M5 21L9 17M19 21L15 17"
-                stroke="#1a1a1a"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
+      {/* ── 搜索条(金币 + 扫一扫 + 相机 + 搜索按钮) ── */}
+      <div className={`px-3 pt-2 pb-3 bg-white flex items-center gap-2 ${topTab === "following" ? "hidden" : ""}`}>
+        <div className="shrink-0 flex flex-col items-center" style={{ width: 40 }}>
+          <span className="text-[22px] leading-none">🪙</span>
+          <span className="text-[8px] mt-0.5 px-1 rounded-full text-white" style={{ background: "#FF6F00" }}>得金币</span>
         </div>
+        <button
+          onClick={() => navigate("/search")}
+          className="flex-1 h-10 rounded-full flex items-center pl-3 pr-1 gap-2"
+          style={{ border: "1.5px solid #FF6F00" }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.8">
+            <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" strokeLinecap="round" />
+            <path d="M7 12h10" strokeLinecap="round" />
+          </svg>
+          <span className="flex-1 text-left text-[14px] text-dpText-secondary">南京西路</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.8" className="mr-1.5">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+          <span
+            className="h-8 px-4 rounded-full text-white text-[14px] font-medium flex items-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+          >
+            搜索
+          </span>
+        </button>
       </div>
 
-      {/* 内容区:按 topTab 切换 */}
+      {/* 内容区 */}
       {topTab === "following" ? (
         <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
           <Following />
         </div>
       ) : (
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        {/* 分类宫格 */}
+        {/* ── 分类宫格(2×5) ── */}
         <div className="px-3 mb-3 grid grid-cols-5 gap-y-3">
           {categories.map((c) => (
-            <div key={c.label} className="flex flex-col items-center gap-1">
-              <div className="w-12 h-12 rounded-full bg-dpOrange-bg flex items-center justify-center text-[22px]">
+            <button
+              key={c.label}
+              onClick={() => c.to && navigate(c.to)}
+              className="flex flex-col items-center gap-1"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-dpOrange-bg flex items-center justify-center text-[24px]">
                 {c.icon}
               </div>
-              <div className="text-[11px] text-dpText-primary">{c.label}</div>
-            </div>
+              <div className="text-[11.5px] text-dpText-primary">{c.label}</div>
+            </button>
           ))}
         </div>
 
-        {/* 信息流标题 */}
-        <div className="px-3 pt-2 pb-2 flex gap-4 border-b border-[#f0f0f0]">
-          <div className="text-[15px] font-bold text-dpInk relative pb-1">
-            推荐
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-[3px] bg-dpOrange rounded-full" />
-          </div>
-          <div className="text-[15px] text-dpText-secondary">附近</div>
-          <div className="text-[15px] text-dpText-secondary">关注</div>
-          <div className="text-[15px] text-dpText-secondary">视频</div>
-        </div>
-
-        {/* 双列瀑布流 */}
-        <div className="px-2 pt-2 grid grid-cols-2 gap-2 pb-32">
-          {feeds.map((f, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl overflow-hidden ripple"
-              style={{
-                boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                border: "1px solid #f5f5f5",
-              }}
-            >
-              <div
-                className="relative w-full"
-                style={{ aspectRatio: i % 2 === 0 ? "3/4" : "4/5" }}
-              >
-                <img
-                  src={f.cover}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-black/40 backdrop-blur-sm text-[10px] text-white">
-                  {f.tag}
-                </div>
+        {/* ── 点评榜单 / 免费试 双卡 ── */}
+        <div className="px-2.5 mb-3 grid grid-cols-2 gap-2">
+          <button
+            onClick={() => navigate("/store", { state: { poi: shPoi("SOSO盐面包"), photo: SH_IMG.soso } })}
+            className="rounded-2xl p-3 text-left"
+            style={{ background: "linear-gradient(135deg, #FFF8E8, #FFF2D8)" }}
+          >
+            <div className="flex items-center gap-1 mb-2">
+              <span className="text-[14px] font-black" style={{ color: "#C8541A" }}>点评榜单</span>
+              <span className="text-[10px]" style={{ color: "#D98E4E" }}>吃喝玩乐指南 ›</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-12 h-12 rounded-lg overflow-hidden bg-white shrink-0">
+                <img src={SH_IMG.soso} alt="" className="w-full h-full object-cover" />
               </div>
-              <div className="px-2 py-2">
-                <div
-                  className="text-[13px] font-medium text-dpInk leading-snug"
-                  style={{
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
-                >
-                  {f.title}
-                </div>
-                <div className="flex items-center justify-between mt-2 text-[11px] text-dpText-tertiary">
-                  <div className="flex items-center gap-1">
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-dpOrange to-dpOrange-light" />
-                    {f.author}
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    <span>♡</span>
-                    {f.likes}
-                  </div>
+              <div className="min-w-0">
+                <div className="text-[13.5px] font-semibold text-dpInk truncate">SOSO盐面包</div>
+                <div className="text-[11px] mt-0.5">
+                  <span style={{ color: "#C8541A" }} className="font-medium">热门榜第3名</span>
+                  <span className="text-dpText-tertiary ml-1">499m</span>
                 </div>
               </div>
             </div>
+          </button>
+          <button
+            onClick={() => navigate("/store", { state: { poi: shPoi("神更仔·潮汕魂大排档(汉口路店)"), photo: SH_IMG.shengengzai } })}
+            className="rounded-2xl p-3 text-left"
+            style={{ background: "linear-gradient(135deg, #FFF0F5, #FFE5F0)" }}
+          >
+            <div className="flex items-center gap-1 mb-2">
+              <span className="text-[14px] font-black" style={{ color: "#D6336C" }}>免费试</span>
+              <span className="text-[10px]" style={{ color: "#E38" }}>2万个活动在线 ›</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-12 h-12 rounded-lg overflow-hidden bg-white shrink-0">
+                <img src={SH_IMG.shengengzai} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[13.5px] font-semibold text-dpInk truncate">神更仔·潮汕魂大排档</div>
+                <div className="text-[11px] mt-0.5">
+                  <span className="font-bold" style={{ color: "#D6336C" }}>¥0</span>
+                  <span className="text-dpText-tertiary line-through ml-1">¥360</span>
+                  <span className="text-dpText-tertiary ml-1">2.0km</span>
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* ── 双列瀑布流(清单卡片穿插) ── */}
+        <div className="px-2 pt-1 grid grid-cols-2 gap-2 pb-32">
+          <FeedCard
+            feed={feeds[0]}
+            onClick={() =>
+              navigate("/store", {
+                state: { poi: shPoi(feeds[0].poi), photo: feeds[0].cover },
+              })
+            }
+          />
+          {/* 清单卡片:私藏清单在信息流的分发形态 */}
+          <ListFeedCard navigate={navigate} />
+          {feeds.slice(1).map((f, i) => (
+            <FeedCard key={i} feed={f} />
           ))}
         </div>
       </div>
-
       )}
-      {/* 底部 Tab 栏 */}
+
+      {/* ── 底部 Tab 栏 ── */}
       <div
         className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#f0f0f0]"
         style={{ zIndex: 20, paddingBottom: "24px", paddingTop: "8px" }}
@@ -221,10 +227,7 @@ export default function Home() {
             </svg>
             <div className="text-[10px] text-dpOrange font-medium">首页</div>
           </div>
-          <button
-            onClick={() => navigate("/map")}
-            className="flex flex-col items-center gap-0.5 px-3"
-          >
+          <button onClick={() => navigate("/map")} className="flex flex-col items-center gap-0.5 px-3">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
               <path d="M9 5l-6 2v14l6-2 6 2 6-2V3l-6 2-6-2z" strokeLinejoin="round" />
               <path d="M9 5v14M15 7v14" />
@@ -232,9 +235,7 @@ export default function Home() {
             <div className="text-[10px] text-dpText-tertiary">地图</div>
           </button>
 
-          {/* 中央加号——核心入口（占位 + 浮动按钮） */}
           <div className="px-3 relative" style={{ width: 70 }}>
-            {/* 占位:仅用于撑开间距 */}
             <div style={{ height: 32 }} />
             <div className="text-[10px] text-transparent">打卡</div>
             <motion.button
@@ -252,11 +253,10 @@ export default function Home() {
               style={{
                 top: -22,
                 left: "50%",
-                x: "-50%", // 用 Framer Motion 的 x 属性避免与 scale 冲突
+                x: "-50%",
                 width: 56,
                 height: 56,
-                background:
-                  "linear-gradient(135deg, #FF6F00, #FFA040)",
+                background: "linear-gradient(135deg, #FF6F00, #FFA040)",
                 border: "4px solid white",
               }}
             >
@@ -272,10 +272,7 @@ export default function Home() {
             </svg>
             <div className="text-[10px] text-dpText-tertiary">消息</div>
           </div>
-          <button
-            onClick={() => navigate("/me")}
-            className="flex flex-col items-center gap-0.5 px-3"
-          >
+          <button onClick={() => navigate("/me")} className="flex flex-col items-center gap-0.5 px-3">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 21a8 8 0 0116 0" />
@@ -285,5 +282,109 @@ export default function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── 普通内容卡 ──
+function FeedCard({ feed, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="bg-white rounded-xl overflow-hidden ripple text-left"
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)", border: "1px solid #f5f5f5" }}
+    >
+      <div className="relative w-full" style={{ aspectRatio: "3/4" }}>
+        <img src={feed.cover} alt="" className="w-full h-full object-cover" />
+        <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-black/40 backdrop-blur-sm text-[10px] text-white">
+          {feed.tag}
+        </div>
+      </div>
+      <div className="px-2 py-2">
+        <div
+          className="text-[13px] font-medium text-dpInk leading-snug"
+          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+        >
+          {feed.title}
+        </div>
+        <div className="flex items-center justify-between mt-2 text-[11px] text-dpText-tertiary">
+          <div className="flex items-center gap-1 min-w-0">
+            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-dpOrange to-dpOrange-light shrink-0" />
+            <span className="truncate">{feed.author}</span>
+            {feed.lv && (
+              <span className="text-[8px] px-0.5 rounded shrink-0" style={{ background: "#FFF3E0", color: "#C8541A" }}>{feed.lv}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <span>♡</span>
+            {feed.likes}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ── 信息流清单卡片:四宫格封面 + 主题 + 创作者(人格化:头像前置) ──
+function ListFeedCard({ navigate }) {
+  const list = getList("list_f_njxl_richang");
+  if (!list) return null;
+  const stats = beenThereStats(list);
+  const photos = list.items.map((it) => it.photo).slice(0, 4);
+  return (
+    <button
+      onClick={() => navigate(`/album/${list.id}`)}
+      className="bg-white rounded-xl overflow-hidden text-left"
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)", border: "1px solid #FFE0C7" }}
+    >
+      <div className="relative w-full" style={{ aspectRatio: "3/4" }}>
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-white">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="bg-[#f0f0f0] overflow-hidden">
+              {photos[i % photos.length] && (
+                <img src={photos[i % photos.length]} alt="" className="w-full h-full object-cover" />
+              )}
+            </div>
+          ))}
+        </div>
+        <div
+          className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[10px] text-white font-medium flex items-center gap-0.5"
+          style={{ background: "rgba(255,111,0,0.9)" }}
+        >
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+          </svg>
+          私藏清单
+        </div>
+        {stats.all && (
+          <div
+            className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] text-white"
+            style={{ background: "rgba(46,125,50,0.85)" }}
+          >
+            ✓ 作者全部去过 {list.items.length} 家
+          </div>
+        )}
+      </div>
+      <div className="px-2 py-2">
+        <div
+          className="text-[13px] font-medium text-dpInk leading-snug"
+          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+        >
+          {list.title}
+        </div>
+        <div className="text-[11px] text-dpText-secondary mt-1 truncate">“{list.items[0]?.reason}”</div>
+        <div className="flex items-center justify-between mt-2 text-[11px] text-dpText-tertiary">
+          <div className="flex items-center gap-1 min-w-0">
+            <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 bg-[#f0f0f0]">
+              <img src={list.owner.avatar} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="truncate">{list.owner.name}</span>
+          </div>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <span>♡</span>
+            {list.likeCount}
+          </div>
+        </div>
+      </div>
+    </button>
   );
 }

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:http": "NO_SSL=1 vite --port 5174"
   },
   "dependencies": {
     "framer-motion": "^12.38.0",

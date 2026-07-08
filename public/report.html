@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>私藏好店 · 产品汇报</title>
+<style>
+  :root {
+    --orange: #FF6633;
+    --orange-deep: #E64A19;
+    --orange-soft: #FFF1EB;
+    --ink: #221C18;
+    --ink-2: #55493F;
+    --ink-3: #94867A;
+    --paper: #FBF8F5;
+    --card: #FFFFFF;
+    --line: #EDE5DD;
+    --gold: #B8860B;
+    --radius: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== progress bar & nav ===== */
+  #progress {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0;
+    background: linear-gradient(90deg, var(--orange), var(--orange-deep));
+    z-index: 101;
+  }
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(251, 248, 245, .88);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; gap: 24px; height: 56px;
+  }
+  .nav-logo { font-weight: 700; font-size: 15px; color: var(--orange-deep); white-space: nowrap; }
+  .nav-logo span { color: var(--ink-3); font-weight: 400; margin-left: 8px; font-size: 13px; }
+  .nav-links { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links a {
+    font-size: 13px; color: var(--ink-2); text-decoration: none;
+    padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+    transition: all .2s;
+  }
+  .nav-links a:hover { background: var(--orange-soft); color: var(--orange-deep); }
+  .nav-links a.active { background: var(--orange); color: #fff; }
+
+  /* ===== layout ===== */
+  main { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 88px 0 24px; }
+  .sec-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 8px; }
+  .sec-num {
+    font-size: 15px; font-weight: 800; color: var(--orange);
+    letter-spacing: .1em; font-family: ui-monospace, monospace;
+  }
+  .sec-title { font-size: 32px; font-weight: 800; letter-spacing: .01em; }
+  .sec-sub { color: var(--ink-3); font-size: 15px; margin-bottom: 36px; }
+
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.on { opacity: 1; transform: none; }
+
+  /* ===== hero ===== */
+  header.hero {
+    padding: 150px 24px 90px; text-align: center;
+    background:
+      radial-gradient(1200px 500px at 50% -10%, var(--orange-soft), transparent),
+      var(--paper);
+  }
+  .hero-tag {
+    display: inline-block; font-size: 13px; letter-spacing: .35em; color: var(--orange-deep);
+    border: 1px solid var(--orange); border-radius: 999px; padding: 4px 18px 4px 22px; margin-bottom: 28px;
+  }
+  .hero h1 { font-size: clamp(48px, 8vw, 84px); font-weight: 900; letter-spacing: .04em; line-height: 1.15; }
+  .hero h1 em { font-style: normal; color: var(--orange); }
+  .hero .hero-sub { margin-top: 18px; font-size: clamp(16px, 2.4vw, 21px); color: var(--ink-2); }
+  .hero .thesis {
+    margin: 44px auto 0; max-width: 780px; background: var(--ink); color: #F7EFE7;
+    border-radius: var(--radius); padding: 28px 36px; font-size: clamp(15px, 2vw, 18px);
+    text-align: left; position: relative;
+  }
+  .hero .thesis strong { color: #FFB199; }
+  .hero .thesis::before {
+    content: "核心判断"; position: absolute; top: -12px; left: 28px;
+    background: var(--orange); color: #fff; font-size: 12px; letter-spacing: .2em;
+    padding: 2px 12px; border-radius: 999px;
+  }
+  .hero-meta { margin-top: 40px; color: var(--ink-3); font-size: 13px; letter-spacing: .1em; }
+
+  /* ===== generic cards ===== */
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px 26px;
+  }
+  .card h4 { font-size: 17px; margin-bottom: 8px; }
+  .card p { font-size: 14px; color: var(--ink-2); }
+  .card .k { color: var(--orange-deep); font-weight: 700; }
+  .badge {
+    display: inline-block; font-size: 12px; font-weight: 700; color: var(--orange-deep);
+    background: var(--orange-soft); border-radius: 6px; padding: 2px 10px; margin-bottom: 10px;
+    letter-spacing: .05em;
+  }
+
+  .callout {
+    border-left: 4px solid var(--orange); background: var(--card);
+    border-radius: 0 var(--radius) var(--radius) 0; padding: 20px 26px; margin: 24px 0;
+    font-size: 15px; color: var(--ink-2);
+  }
+  .callout strong { color: var(--ink); }
+
+  /* ===== table ===== */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 640px; }
+  th, td { padding: 14px 18px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { background: #F6F0EA; font-size: 13px; color: var(--ink-2); letter-spacing: .05em; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr.hl td { background: var(--orange-soft); font-weight: 600; }
+  tr.hl td:first-child { color: var(--orange-deep); }
+  td .dim { color: var(--ink-3); }
+
+  /* ===== funnel ===== */
+  .funnel { display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
+  .funnel .f-row { display: flex; align-items: center; gap: 16px; }
+  .funnel .f-bar {
+    height: 54px; border-radius: 12px; display: flex; align-items: center;
+    padding: 0 22px; color: #fff; font-weight: 700; font-size: 15px; white-space: nowrap;
+  }
+  .funnel .f-note { font-size: 13px; color: var(--ink-3); }
+  .f1 { width: 100%; background: #D8C7B8; color: var(--ink) !important; }
+  .f2 { width: 72%; background: #FF9466; }
+  .f3 { width: 46%; background: var(--orange-deep); }
+
+  /* ===== pyramid ===== */
+  .pyramid { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .p-layer {
+    color: #fff; text-align: center; padding: 14px 20px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; line-height: 1.5;
+  }
+  .p-layer small { display: block; font-weight: 400; opacity: .85; font-size: 12.5px; }
+  .p1 { width: 34%; min-width: 240px; background: var(--orange-deep); }
+  .p2 { width: 60%; min-width: 300px; background: #FF8A5C; }
+  .p3 { width: 88%; min-width: 340px; background: #D8C7B8; color: var(--ink); }
+
+  /* ===== flywheel ===== */
+  .flywheel { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; justify-content: center; margin: 12px 0 4px; }
+  .fw-step {
+    flex: 1; min-width: 180px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 18px 18px 16px; position: relative; margin-right: 34px;
+  }
+  .fw-step:last-child { margin-right: 0; }
+  .fw-step::after {
+    content: "→"; position: absolute; right: -27px; top: 50%; transform: translateY(-50%);
+    color: var(--orange); font-size: 22px; font-weight: 800;
+  }
+  .fw-step:last-child::after { content: ""; }
+  .fw-step .n {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--orange); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; margin-bottom: 10px;
+  }
+  .fw-step b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .fw-step span { font-size: 13px; color: var(--ink-2); }
+  .fw-loop { text-align: center; color: var(--orange-deep); font-size: 13px; margin-top: 14px; letter-spacing: .05em; }
+
+  /* ===== risk ===== */
+  .risk { display: flex; gap: 20px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 26px; margin-bottom: 14px; }
+  .risk .rn {
+    flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; background: var(--orange-soft);
+    color: var(--orange-deep); font-weight: 800; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .risk.top .rn { background: var(--orange-deep); color: #fff; }
+  .risk h4 { font-size: 16px; margin-bottom: 6px; }
+  .risk h4 .tag { font-size: 12px; color: var(--orange-deep); background: var(--orange-soft); border-radius: 6px; padding: 2px 8px; margin-left: 8px; vertical-align: 2px; }
+  .risk p { font-size: 14px; color: var(--ink-2); }
+  .risk .fix { margin-top: 8px; font-size: 14px; }
+  .risk .fix b { color: var(--orange-deep); }
+
+  /* ===== timeline ===== */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before { content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+  .tl-item { position: relative; padding: 0 0 30px 18px; }
+  .tl-item::before {
+    content: ""; position: absolute; left: -26px; top: 8px; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--orange); border: 3px solid var(--paper); box-shadow: 0 0 0 2px var(--orange);
+  }
+  .tl-item h4 { font-size: 17px; }
+  .tl-item h4 small { color: var(--ink-3); font-weight: 400; margin-left: 10px; font-size: 13px; }
+  .tl-item ul { margin: 8px 0 6px 18px; font-size: 14px; color: var(--ink-2); }
+  .tl-item li { margin-bottom: 3px; }
+  .tl-item .goal { font-size: 13.5px; color: var(--orange-deep); font-weight: 600; }
+
+  /* ===== naming ===== */
+  .name-hero {
+    text-align: center; background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 44px 24px 36px; margin-bottom: 16px;
+  }
+  .name-hero .n-big { font-size: clamp(40px, 6vw, 60px); font-weight: 900; color: var(--orange-deep); letter-spacing: .12em; }
+  .name-hero .n-sub { color: var(--ink-3); font-size: 14px; margin-top: 8px; }
+
+  /* ===== conclusion ===== */
+  .final {
+    background: var(--ink); color: #F1E7DC; border-radius: 20px;
+    padding: 52px 48px; margin: 40px 0 0; font-size: clamp(16px, 2.2vw, 20px); line-height: 2;
+  }
+  .final b { color: #FFB199; }
+  .final .final-tag { font-size: 13px; letter-spacing: .3em; color: var(--orange); margin-bottom: 16px; }
+
+  footer { text-align: center; color: var(--ink-3); font-size: 13px; padding: 48px 0 40px; }
+
+  @media (max-width: 860px) {
+    .g2, .g3, .g4 { grid-template-columns: 1fr; }
+    .flywheel { flex-direction: column; }
+    .fw-step { margin-right: 0; margin-bottom: 30px; }
+    .fw-step::after { content: "↓"; right: 50%; top: auto; bottom: -28px; transform: translateX(50%); }
+    .fw-step:last-child { margin-bottom: 0; }
+    .fw-step:last-child::after { content: ""; }
+    section { padding: 64px 0 16px; }
+    .final { padding: 32px 26px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">私藏好店<span>产品汇报</span></div>
+    <div class="nav-links">
+      <a href="#s1">机会</a><a href="#s2">定义</a><a href="#s3">路径</a><a href="#s4">增长</a><a href="#s5">风险</a><a href="#s6">命名</a><a href="#s7">里程碑</a><a href="#s8">指标</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-tag">大众点评 · 个人清单产品</div>
+  <h1>私藏<em>好店</em></h1>
+  <div class="hero-sub">把"会吃的朋友"的品味，变成点评的下一条找店路径</div>
+  <div class="thesis">
+    私藏好店的本质，是把点评的信任资产从<strong>"店的评分"</strong>扩展到<strong>"人的品味"</strong>。<br>
+    评价回答"这家店怎么样"，私藏好店回答"<strong>这个人会带你去哪</strong>"。
+  </div>
+  <div class="hero-meta">产品计划书 V1.1 · 2026 年 7 月</div>
+  <div style="margin-top: 18px;">
+    <a href="https://yinghanguo.github.io/dianping-checkin-demo/" target="_blank"
+       style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 26px; border-radius: 999px; background: var(--orange); color: #fff; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 6px 20px rgba(255,102,51,.35);">
+      📱 打开可交互原型
+    </a>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ 01 机会 ============ -->
+<section id="s1">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">01</span><span class="sec-title">项目背景与机会</span></div>
+    <div class="sec-sub">一条已经存在、但点评没有承接的找店路径</div>
+  </div>
+  <div class="grid g2 reveal">
+    <div class="card">
+      <div class="badge">现状</div>
+      <h4>品类 → 店</h4>
+      <p>用户在点评找店的唯一路径：搜索、榜单、评分。十几年未变，信任来源是<span class="k">统计</span>。</p>
+    </div>
+    <div class="card" style="border-color: var(--orange);">
+      <div class="badge">机会</div>
+      <h4>人 → 店</h4>
+      <p>现实中信任度更高的路径："问那个会吃的朋友"。它今天发生在微信对话框里——<span class="k">"发我你那个火锅清单"</span>——点评并没有承接它。</p>
+    </div>
+  </div>
+  <div class="callout reveal">
+    「私藏好店」要做的，就是把这条路径产品化：让"会吃的朋友"的个人品味被便捷地创作成清单，并在<strong>信息流、好友列表、搜索结果页、门店详情页</strong>等主链路分发。
+  </div>
+</section>
+
+<!-- ============ 02 定义 ============ -->
+<section id="s2">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">02</span><span class="sec-title">产品定义</span></div>
+    <div class="sec-sub">私藏好店在现有体系中的坐标</div>
+  </div>
+
+  <div class="tbl-wrap reveal">
+    <table>
+      <tr><th></th><th>单元</th><th>信任基础</th><th>时效性</th><th>资产归属</th></tr>
+      <tr><td><b>评价</b></td><td>单店单次体验</td><td>统计信任<span class="dim">（量大取平均）</span></td><td>低衰减</td><td>店</td></tr>
+      <tr><td><b>打卡</b></td><td>单店行为记录</td><td>无<span class="dim">（"我来过"的足迹）</span></td><td>无</td><td>人（足迹）</td></tr>
+      <tr><td><b>官方榜单</b></td><td>多店集合</td><td>平台信任<span class="dim">（算法与规则）</span></td><td>周期更新</td><td>平台</td></tr>
+      <tr class="hl"><td>私藏好店</td><td>多店 + 一个主题口径</td><td>品味信任（信这个人）</td><td>低衰减，可持续更新</td><td>人</td></tr>
+    </table>
+  </div>
+  <div class="callout reveal">官方榜单是<strong>"统计的答案"</strong>，私藏好店是<strong>"某个人的答案"</strong>——二者在分发场景中互补并存。</div>
+
+  <div class="grid g3 reveal" style="margin-top: 24px;">
+    <div class="card">
+      <div class="badge">属性一</div>
+      <h4>是策展，不是记录</h4>
+      <p>价值不在单店信息，而在选择与排除——"他只放了这八家"本身就是信息。<span class="k">评价越多越准，清单越少越贵。</span></p>
+    </div>
+    <div class="card">
+      <div class="badge">属性二</div>
+      <h4>是活的文档</h4>
+      <p>可持续增删维护，因此具备<span class="k">订阅价值</span>：死内容只能被消费一次，活清单让人反复回来。</p>
+    </div>
+    <div class="card">
+      <div class="badge">属性三</div>
+      <h4>以人为索引</h4>
+      <p>第一次为点评提供"人 → 店"的找店路径，是"会吃的朋友"这一现实行为的<span class="k">产品化</span>。</p>
+    </div>
+  </div>
+
+  <div class="grid g2 reveal" style="margin-top: 16px;">
+    <div class="card" style="background: var(--orange-soft); border-color: transparent;">
+      <h4>类比：清单之于门店，如歌单之于歌曲</h4>
+      <p>Spotify 的歌单没有生产任何新歌，但重构了消费入口，并让"品味"本身成为可关注的对象。</p>
+    </div>
+    <div class="card">
+      <h4>形态最低规格</h4>
+      <p>清单 = 主题 + N 家门店 + <span class="k">每店一句话理由</span>（结构化最低要求）。没有理由是店铺堆砌，"他家只有中午去才有那个汤"才是品味的证据。支持私密 / 公开，公开只是一个开关。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 路径 ============ -->
+<section id="s3">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">03</span><span class="sec-title">产品路径设计</span></div>
+    <div class="sec-sub">创作 · 分发 · 存放</div>
+  </div>
+
+  <div class="callout reveal" style="border-left-color: var(--orange-deep);">
+    <strong>创作的关键设计原则：清单是"攒"出来的，不是"写"出来的。</strong>做成从零开始的创作任务，供给必然起不来。
+  </div>
+
+  <div class="grid g3 reveal">
+    <div class="card">
+      <div class="badge">① 存量转化 · 最重要</div>
+      <p>收藏夹一键生成清单；从历史打卡 / 高分评价反向聚合——"你打过卡的咖啡店已有 23 家，整理成一份私藏好店？"<span class="k">AI 生成草稿</span>，用户只做删减和补一句话理由。</p>
+    </div>
+    <div class="card">
+      <div class="badge">② 顺手收集</div>
+      <p>门店页"收入私藏"按钮（类似加购物车）；写完评价后追问"加进你的某个清单吗？"——让创作<span class="k">分散在日常使用中</span>。</p>
+    </div>
+    <div class="card">
+      <div class="badge">③ 主动创作</div>
+      <p>个人主页"新建清单"，服务头部创作者。</p>
+    </div>
+  </div>
+
+  <h3 style="margin: 44px 0 16px; font-size: 20px;" class="reveal">分发：清单在哪被看见（按效率排序）</h3>
+  <div class="tbl-wrap reveal">
+    <table>
+      <tr><th>场景</th><th>形式</th><th>逻辑</th></tr>
+      <tr><td><b>门店详情页</b></td><td>高互动清单模块 +「被 N 份私藏收录」</td><td>店是天然流量入口，借店的流量给人导流；清单反向为店提供比评分更立体的背书</td></tr>
+      <tr><td><b>搜索结果页</b></td><td>店铺结果中穿插清单卡片</td><td>命中高决策成本场景——用户要的不是排序，是"一个靠谱的人替我选好"</td></tr>
+      <tr><td><b>信息流</b></td><td>清单卡片、"好友更新了私藏"事件</td><td>品味浏览与关系链消费</td></tr>
+      <tr><td><b>好友列表 / 主页</b></td><td>「TA 的私藏」一级入口</td><td>人 → 店路径的起点</td></tr>
+      <tr><td><b>地图</b><span class="dim">（V1.1 新增）</span></td><td>「私藏」图层（与必吃榜并列）：热门门店 pin 追加收录标记 → 底部清单列表 → 点选后清单门店连成路线上图</td><td>信息流分发内容，地图分发<b>决策</b>；清单在地图上变成"可以走的路线"，从决策工具升级为行动工具</td></tr>
+      <tr><td><b>站外分享</b></td><td>精致的微信卡片</td><td>"发我你那个清单"是已存在的真实需求，最便宜的外部增长</td></tr>
+    </table>
+  </div>
+
+  <h3 style="margin: 44px 0 16px; font-size: 20px;" class="reveal">存放：工具与表达合一</h3>
+  <div class="grid g2 reveal">
+    <div class="card">
+      <p style="margin-bottom: 16px;">存放位置决定产品性质：放在"收藏"是工具，放在"个人主页"是表达。<span class="k">答案是两者合一</span>——清单不新建体系，而是给点评已有的「专辑」接电：收藏 → 归入专辑（私密整理）→ 补一句理由 + 公开 = 私藏清单。<span class="k">一个对象三种状态</span>，工具层已存在，缺的只是表达层与分发层；公开清单成为个人主页的一级门面"品味橱窗"。</p>
+      <p>私密工具价值兜底 100% 用户的使用理由，公开表达只是一个开关。</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-bottom: 14px;">供给漏斗自然形成</h4>
+      <div class="funnel">
+        <div class="f-row"><div class="f-bar f1">收藏</div><div class="f-note">100% 用户的工具行为</div></div>
+        <div class="f-row"><div class="f-bar f2">归入专辑</div><div class="f-note">私密整理，仍是工具（点评已有）</div></div>
+        <div class="f-row"><div class="f-bar f3">公开清单</div><div class="f-note">补一句理由 + 一个开关，成为表达</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 增长 ============ -->
+<section id="s4">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">04</span><span class="sec-title">用户与增长</span></div>
+    <div class="sec-sub">创作金字塔 · 冷启动 · 规模化飞轮</div>
+  </div>
+
+  <div class="grid g2 reveal">
+    <div class="card">
+      <h4 style="margin-bottom: 16px;">创作侧是金字塔，不幻想全民创作</h4>
+      <div class="pyramid">
+        <div class="p-layer p1">头部 ~1%<small>"会吃的朋友"：高等级会员、精评达人、本地 KOC —— 分发级供给</small></div>
+        <div class="p-layer p2">腰部 ~5–10%<small>有整理欲的重度用户 —— 供给主力与扩散层</small></div>
+        <div class="p-layer p3">长尾 100%<small>把清单当私密收藏工具 —— 腰部与头部的蓄水池</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <h4>消费侧是全量决策用户</h4>
+      <p style="margin-bottom: 12px;">优先覆盖<span class="k">高决策成本场景</span>：宴请、约会、出差、陪外地朋友——这些场景下清单对评分的替代优势最大。</p>
+      <h4 style="margin-top: 20px;">冷启动四件事</h4>
+      <p>① <b>供给不靠激励靠存量</b>：AI 基于十几年评价/打卡/收藏数据生成草稿清单，定向"一键认领发布"，第一批供给近乎零成本；<br>
+      ② <b>定向邀请 + 官方打样</b>：城市 KOC 种子创作者 + 官方共创标杆清单，定义什么是好清单；<br>
+      ③ <b>打透一两个城市</b>：清单价值依赖同城密度，先在上海或成都做到"搜任何主流品类都能撞到好清单"；<br>
+      ④ <b>选对首发场景</b>：从"问朋友才敢决策"的品类切入。</p>
+    </div>
+  </div>
+
+  <h3 style="margin: 44px 0 16px; font-size: 20px;" class="reveal">规模化飞轮</h3>
+  <div class="reveal">
+    <div class="flywheel">
+      <div class="fw-step"><div class="n">1</div><b>曝光</b><span>店页 / 搜索给清单分发位（冷启动期流量倾斜，平台保证这一环）</span></div>
+      <div class="fw-step"><div class="n">2</div><b>互动</b><span>清单获得点赞、收藏、订阅</span></div>
+      <div class="fw-step"><div class="n">3</div><b>维护</b><span>创作者得到反馈，持续修剪与新建</span></div>
+      <div class="fw-step"><div class="n">4</div><b>再分发</b><span>更新行为触发新一轮分发</span></div>
+    </div>
+    <div class="fw-loop">↻ 更新回到曝光，飞轮闭环</div>
+  </div>
+
+  <div class="callout reveal" style="margin-top: 32px;">
+    <strong>对 DAU 保持诚实：</strong>点评是低频决策工具，清单不会把它变成小红书。但它带来两类真实的频次增量——<strong>创作者的维护频次</strong>（清单是活的，需要回来修剪）和<strong>消费者的"拔草"回访</strong>（收藏清单后勾掉去过的店，清单变成待办列表；叠加"你订阅的私藏更新了"召回，建立点评目前缺失的"订阅—更新"内容循环）。<br>
+    <strong style="color: var(--orange-deep);">合理预期：留存和决策渗透先动，DAU 后动。</strong>
+  </div>
+</section>
+
+<!-- ============ 05 风险 ============ -->
+<section id="s5">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">05</span><span class="sec-title">风险与对策</span></div>
+    <div class="sec-sub">按严重程度排序</div>
+  </div>
+
+  <div class="risk top reveal">
+    <div class="rn">1</div>
+    <div>
+      <h4>商业化污染信任<span class="tag">最大卡点</span></h4>
+      <p>点评的立身之本是真实性，而清单的信任模型比评分更脆弱——评分靠量对冲水军，清单只要创作者被收买一次就整体崩塌；"推广清单"混入分发会让用户对整个体系的信任连坐。</p>
+      <p class="fix"><b>对策（必须前置）：</b>早期清单一律不可商业化；"真实去过"加权——清单内门店有创作者本人打卡 / 消费凭证的，分发权重更高；对店铺密集重合、集中新增的清单做算法识别与降权。</p>
+    </div>
+  </div>
+  <div class="risk reveal">
+    <div class="rn">2</div>
+    <div>
+      <h4>供给冷启动悖论</h4>
+      <p>没人看 → 没人写。</p>
+      <p class="fix"><b>对策：</b>私密工具价值兜底，让创作在无人观看时也成立（收藏 → 私密清单 → 公开清单的漏斗设计）。</p>
+    </div>
+  </div>
+  <div class="risk reveal">
+    <div class="rn">3</div>
+    <div>
+      <h4>马太效应</h4>
+      <p>头部达人吃掉全部分发，普通人失去动力。</p>
+      <p class="fix"><b>对策：</b>分发上"朋友的清单"权重高于"网红的清单"。这也是点评相对小红书的差异化——小红书给你陌生人的种草，点评给你<b>认识的人的私藏</b>。</p>
+    </div>
+  </div>
+  <div class="risk reveal">
+    <div class="rn">4</div>
+    <div>
+      <h4>清单腐烂</h4>
+      <p>店会关、会变味，清单随时间失效。</p>
+      <p class="fix"><b>对策：</b>闭店自动标注、清单"健康度"分、更新行为触发再分发（把维护变成有回报的事）。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 命名 ============ -->
+<section id="s6">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">06</span><span class="sec-title">产品命名</span></div>
+    <div class="sec-sub">个人主页入口：「TA 的私藏」</div>
+  </div>
+  <div class="name-hero reveal">
+    <div class="n-big">私藏好店</div>
+    <div class="n-sub">这是我私藏的店，不轻易告诉别人</div>
+  </div>
+  <div class="grid g3 reveal">
+    <div class="card">
+      <div class="badge">理由一</div>
+      <h4>征用现成心智</h4>
+      <p>"这是我私藏的店""分享几家私藏"是用户已经在说的话，<span class="k">零教育成本</span>。</p>
+    </div>
+    <div class="card">
+      <div class="badge">理由二</div>
+      <h4>自带信任与稀缺感</h4>
+      <p>"私藏"暗示不是广告、不是榜单——正面对冲最大的信任风险。</p>
+    </div>
+    <div class="card">
+      <div class="badge">理由三</div>
+      <h4>与产品路径严丝合缝</h4>
+      <p>收藏 → 私藏 → 公开私藏；"公开我的私藏"本身就有社交张力，是<span class="k">天然的传播语</span>。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 07 里程碑 ============ -->
+<section id="s7">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">07</span><span class="sec-title">里程碑规划</span></div>
+    <div class="sec-sub">三阶段，各验证一件事</div>
+  </div>
+  <div class="timeline reveal">
+    <div class="tl-item">
+      <h4>Phase 1 · 工具期<small>0–3 个月</small></h4>
+      <ul>
+        <li>收藏体系升级为清单体系：私密 / 公开开关、每店一句话理由、门店页"收入私藏"</li>
+        <li>AI 存量转化：草稿清单生成 + 一键认领</li>
+        <li>个人主页「TA 的私藏」模块</li>
+      </ul>
+      <div class="goal">验证创作漏斗：收藏 → 私密清单 → 公开清单的转化率</div>
+    </div>
+    <div class="tl-item">
+      <h4>Phase 2 · 分发期<small>3–6 个月</small></h4>
+      <ul>
+        <li>门店详情页清单模块 +「被 N 份私藏收录」</li>
+        <li>搜索结果页清单卡片穿插（先约会 / 宴请 / 深夜食堂等高决策品类）</li>
+        <li>微信分享卡片；种子城市 KOC 邀请计划与官方共创标杆清单</li>
+      </ul>
+      <div class="goal">验证分发效率：清单卡片点击率、清单到店转化</div>
+    </div>
+    <div class="tl-item">
+      <h4>Phase 3 · 循环期<small>6–12 个月</small></h4>
+      <ul>
+        <li>清单订阅与更新召回、"拔草"勾选机制</li>
+        <li>信息流清单卡片与好友关系链事件</li>
+        <li>反作弊体系（真实去过加权、商业密度识别）全量；城市复制</li>
+      </ul>
+      <div class="goal">验证"订阅—更新"循环对留存的拉动</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 08 指标 ============ -->
+<section id="s8">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">08</span><span class="sec-title">指标体系</span></div>
+    <div class="sec-sub">北极星指标：周活跃清单消费用户数（浏览 / 收藏 / 订阅清单的去重用户）</div>
+  </div>
+  <div class="tbl-wrap reveal">
+    <table>
+      <tr><th style="width: 120px;">层</th><th>指标</th></tr>
+      <tr><td><b>供给</b></td><td>公开清单渗透率（发布用户 / MAU）、人均清单数、清单月更新率</td></tr>
+      <tr><td><b>分发</b></td><td>店页 / 搜索清单模块曝光点击率、清单 → 门店页转化率</td></tr>
+      <tr><td><b>消费</b></td><td>清单收藏 / 订阅数、更新召回打开率、"拔草"回访率</td></tr>
+      <tr><td><b>信任</b></td><td>商业清单举报率、"真实去过"覆盖率</td></tr>
+      <tr><td><b>大盘</b></td><td>决策渗透（经清单到店的决策占比）、次月留存增量，<span class="dim">最后才是 DAU</span></td></tr>
+    </table>
+  </div>
+
+  <div class="final reveal">
+    <div class="final-tag">一句话收拢</div>
+    这个产品成立的前提，是点评愿意把一部分<b>"店的流量"</b>让渡给<b>"人"</b>。私藏好店能不能成，产品设计只占一半，另一半取决于分发上是否真的敢在门店页和搜索里给清单留出一级位置——如果只是加一个藏得很深的新功能，它会变成又一个收藏夹。
+  </div>
+</section>
+
+</main>
+
+<footer>私藏好店 · 产品计划书 V1.1 · 2026 年 7 月 · <a href="https://yinghanguo.github.io/dianping-checkin-demo/" target="_blank" style="color: var(--orange-deep);">可交互原型</a></footer>
+
+<script>
+  // scroll progress
+  const bar = document.getElementById('progress');
+  addEventListener('scroll', () => {
+    const h = document.documentElement;
+    bar.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
+  }, { passive: true });
+
+  // reveal on scroll (position-based, robust across environments)
+  const reveals = [...document.querySelectorAll('.reveal')];
+  const links = [...document.querySelectorAll('.nav-links a')];
+  const secs = links.map(a => document.querySelector(a.getAttribute('href')));
+
+  function tick() {
+    const vh = innerHeight;
+    for (const el of reveals) {
+      if (el.classList.contains('on')) continue;
+      const r = el.getBoundingClientRect();
+      if (r.top < vh * 0.92 && r.bottom > 0) el.classList.add('on');
+    }
+    // active nav link
+    let cur = null;
+    for (const s of secs) {
+      if (s && s.getBoundingClientRect().top <= vh * 0.35) cur = s;
+    }
+    links.forEach(a => a.classList.toggle('active', cur && a.getAttribute('href') === '#' + cur.id));
+  }
+  addEventListener('scroll', tick, { passive: true });
+  addEventListener('resize', tick);
+  setInterval(tick, 250);
+  tick();
+</script>
+
+</body>
+</html>

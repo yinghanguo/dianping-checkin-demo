@@ -14,6 +14,7 @@ import {
   setCheckinVisibility,
 } from "../utils/userCheckins";
 import CheckinTimelineItem from "../components/CheckinTimelineItem";
+import SaveToListSheet from "../components/SaveToListSheet";
 
 const WEEKDAY_CN = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
@@ -169,6 +170,8 @@ export default function Success() {
   const isQuick = params.get("quick") === "true";
   const { photos, firstPhoto, visibility, taggedFriends, resetSession, setVisibility } = usePhoto();
 
+  // 收入私藏弹层
+  const [saveListOpen, setSaveListOpen] = useState(false);
   // 半浮层:我的打卡列表
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetTick, setSheetTick] = useState(0);
@@ -563,6 +566,45 @@ export default function Success() {
           </button>
         </motion.div>
 
+        {/* ── 收入私藏追问(顺手收集:创作分散在日常使用中) ── */}
+        {primaryPOI && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.62 }}
+            className="relative z-10 px-5 mt-3"
+          >
+            <button
+              onClick={() => setSaveListOpen(true)}
+              className="w-full rounded-2xl p-4 flex items-center gap-3 ripple"
+              style={{
+                background: "linear-gradient(135deg, #FFF3E0, #FFE8CC)",
+                border: "1px solid rgba(255,111,0,0.2)",
+              }}
+            >
+              <div
+                className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center text-2xl bg-white/70"
+              >
+                🔖
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <div className="text-[14px] font-medium text-dpInk truncate">
+                  这家店值得留住？
+                </div>
+                <div className="text-[12px] text-dpText-secondary mt-0.5 truncate">
+                  把「{primaryPOI.name}」收入你的私藏清单
+                </div>
+              </div>
+              <span
+                className="shrink-0 px-3 h-7 rounded-full text-[12px] text-white font-medium flex items-center"
+                style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+              >
+                收入私藏
+              </span>
+            </button>
+          </motion.div>
+        )}
+
         {/* ── 朋友圈热门打卡地(新增) ── */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
@@ -764,6 +806,14 @@ export default function Success() {
           </>
         )}
       </AnimatePresence>
+
+      {/* 收入私藏弹层 */}
+      <SaveToListSheet
+        open={saveListOpen}
+        poi={primaryPOI}
+        photo={firstPhoto}
+        onClose={() => setSaveListOpen(false)}
+      />
     </div>
   );
 }

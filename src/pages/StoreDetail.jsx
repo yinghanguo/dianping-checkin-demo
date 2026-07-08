@@ -1,6 +1,8 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import SaveToListSheet from "../components/SaveToListSheet";
+import { getListsContaining, getReasonFor, getMyLists } from "../data/lists";
+import { STORE_INFO } from "../data/shanghaiStores";
 
 // Deterministic pseudo-random from string seed
 function seededNum(str, min, max, offset = 0) {
@@ -113,34 +115,68 @@ const TABS = ["优惠", "推荐菜", "评价"];
 export default function StoreDetail() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const [activeTab, setActiveTab] = useState(2); // default: 评价
-  const [saved, setSaved] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
+  // 锚点楼层:优惠 / 推荐菜 / 评价 依次排布,点 Tab 滚动到对应楼层
+  const [activeTab, setActiveTab] = useState(0);
+  const containerRef = useRef(null);
+  const dealsRef = useRef(null);
+  const dishesRef = useRef(null);
+  const reviewsRef = useRef(null);
+  const [saveSheetOpen, setSaveSheetOpen] = useState(false);
+  const [listTick, setListTick] = useState(0);
+
+  const sectionRefs = [dealsRef, dishesRef, reviewsRef];
+  const scrollToSection = (i) => {
+    const c = containerRef.current;
+    const sec = sectionRefs[i].current;
+    if (!c || !sec) return;
+    const top = c.scrollTop + sec.getBoundingClientRect().top - c.getBoundingClientRect().top - 44;
+    c.scrollTo({ top, behavior: "smooth" });
+  };
+  const handleScroll = () => {
+    const c = containerRef.current;
+    if (!c) return;
+    const cTop = c.getBoundingClientRect().top + 52;
+    let cur = 0;
+    sectionRefs.forEach((r, i) => {
+      if (r.current && r.current.getBoundingClientRect().top <= cTop) cur = i;
+    });
+    // 滚到底时最后一个楼层可能到不了顶,直接高亮它
+    if (c.scrollTop >= c.scrollHeight - c.clientHeight - 2) cur = sectionRefs.length - 1;
+    setActiveTab(cur);
+  };
 
   const poi = state?.poi ?? { name: "门店", city: "未知", district: "", category: "" };
   const caption = state?.caption ?? "";
   const checkin = state?.checkin ?? null;
 
-  // Collect photos: prefer checkin.photos, fallback to state.photo
+  // 真实门店档案(上海南京西路商圈,按真实点评截图整理)
+  const real = STORE_INFO[poi.name];
+
+  // Collect photos: prefer checkin.photos, fallback to real store photos / state.photo
   const photos = (() => {
     if (checkin?.photos?.length) return checkin.photos;
+    if (real?.photos?.length) return real.photos;
     if (state?.photo) return [state.photo];
     return ["https://images.unsplash.com/photo-1515443961218-a51367888e4b?w=600&q=80"];
   })();
 
-  const { base, taste, env, svc, count, price } = genRatings(poi.name);
+  const gen = genRatings(poi.name);
+  const base = real?.rating ?? gen.base;
+  const taste = real?.sub?.taste ?? gen.taste;
+  const env = real?.sub?.env ?? gen.env;
+  const svc = real?.sub?.svc ?? gen.svc;
+  const count = real?.reviews ?? gen.count;
+  const price = real?.price ?? gen.price;
   const isAttractionLike = ["博物", "展览", "景点", "教堂", "公园", "广场", "山", "建筑"].some(k => poi.category?.includes(k));
 
-  // Mock hours
-  const hours = (() => {
+  // Hours / address:真实档案优先
+  const hours = real?.hours ?? (() => {
     if (poi.category?.includes("咖啡")) return "08:00–22:00";
     if (isAttractionLike) return "09:00–18:00（周一闭馆）";
     if (poi.category?.includes("酒店")) return "全天 24 小时";
     return "11:30–14:30  17:30–22:00";
   })();
-
-  // Mock address
-  const address = poi.district ? `${poi.city}市 ${poi.district}区` : `${poi.city}`;
+  const address = real?.address ?? (poi.district ? `${poi.city}市 ${poi.district}区` : `${poi.city}`);
 
   // Mock dishes/highlights
   const highlights = isAttractionLike
@@ -149,11 +185,16 @@ export default function StoreDetail() {
     ? ["拿铁", "美式", "手冲", "招牌蛋糕"]
     : ["招牌 tapas", "今日特推", "本地特色"];
 
-  const handleSave = () => {
-    setSaved((v) => !v);
-    setToastVisible(true);
-    setTimeout(() => setToastVisible(false), 1800);
-  };
+  // 收录本店的公开清单(店页「被收录」模块)
+  const includedLists = useMemo(
+    () => getListsContaining(poi.name),
+    [poi.name, listTick]
+  );
+  // 我是否已把本店收入某个清单
+  const inMyList = useMemo(
+    () => getMyLists().some((l) => l.items.some((it) => it.poi?.name === poi.name)),
+    [poi.name, listTick]
+  );
 
   const handleCheckin = () => {
     navigate("/camera");
@@ -161,7 +202,7 @@ export default function StoreDetail() {
 
   return (
     <div className="absolute inset-0 bg-white flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
+      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto no-scrollbar pb-24">
 
         {/* ── Photo Carousel ── */}
         <div className="relative">
@@ -223,6 +264,19 @@ export default function StoreDetail() {
               <span className="text-[11px] text-dpText-tertiary">{poi.city}</span>
             )}
           </div>
+
+          {/* 榜单徽章 + 标签(真实档案) */}
+          {real?.badge && (
+            <div className="flex items-center gap-1 mt-2 flex-wrap">
+              <span className="inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded" style={{ background: "#FFF0E5", color: "#E65000" }}>
+                <span className="px-0.5 rounded-sm text-white text-[9px] font-bold" style={{ background: "#FF6F00" }}>榜</span>
+                {real.badge}
+              </span>
+              {real.tags?.map((t) => (
+                <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded text-dpText-secondary" style={{ background: "#F5F5F5" }}>{t}</span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Info rows ── */}
@@ -255,45 +309,193 @@ export default function StoreDetail() {
           </div>
         </div>
 
-        {/* ── Tabs ── */}
+        {/* ── 锚点 Tab 栏(吸顶,点按跳楼层) ── */}
         <div className="flex border-b border-[#f5f5f5] bg-white sticky top-0 z-10">
           {TABS.map((tab, i) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(i)}
-              className="flex-1 py-3 text-[13px] font-medium relative"
-              style={{ color: activeTab === i ? "#FF6F00" : "#999" }}
+              onClick={() => scrollToSection(i)}
+              className="flex-1 py-3 text-[14px] font-medium relative"
+              style={{ color: activeTab === i ? "#1a1a1a" : "#999", fontWeight: activeTab === i ? 700 : 500 }}
             >
               {tab}
-              {i === 2 && <span className="ml-0.5 text-[11px]">({count})</span>}
+              {i === 2 && <span className="ml-0.5 text-[11px] font-normal">({count})</span>}
               {activeTab === i && (
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#FF6F00]" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-[#FF6F00]" />
               )}
             </button>
           ))}
         </div>
 
-        {/* ── Tab content ── */}
-        <div className="px-4 pt-4 pb-4">
-          {/* 优惠 */}
-          {activeTab === 0 && (
-            <div className="text-center py-10 text-dpText-tertiary text-[13px]">暂无优惠活动</div>
-          )}
+        {/* ── 内容楼层(依次排布) ── */}
+        <div className="px-4 pb-4">
+          {/* ══ 楼层一:优惠(神券 + 到店套餐) ══ */}
+          <div ref={dealsRef} className="pt-3">
+            <div className="flex items-center gap-2 mb-3">
+              {["满80减8", "满20减5"].map((t) => (
+                <span key={t} className="text-[11px] px-1.5 py-0.5 rounded" style={{ background: "#FFF0F6", color: "#E0359C" }}>
+                  <b>神券</b>｜{t}
+                </span>
+              ))}
+              <span className="ml-auto text-[11px] text-dpText-tertiary">全部 ›</span>
+            </div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[16px] font-bold text-dpInk">到店套餐</span>
+              <span className="text-[10.5px] text-dpText-tertiary">⊙随时退 ⊙过期退</span>
+            </div>
+            {(real?.deals?.length
+              ? real.deals
+              : [
+                  { type: "惠", price: Math.round(price * 0.78), off: "7.8折", text: "精选双人餐" },
+                  { type: "券", price: 50, off: "5折", text: "100元代金券" },
+                ]
+            ).map((d, i) => (
+              <div key={i} className="flex gap-2.5 py-3 border-b border-[#f9f9f9]">
+                <div className="w-[66px] h-[66px] rounded-lg overflow-hidden bg-[#f0f0f0] shrink-0">
+                  <img src={photos[i % photos.length]} alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    {i === 0 && (
+                      <span className="shrink-0 text-[9px] px-1 py-px rounded text-[#B8860B]" style={{ background: "#2c2c2c", color: "#F0D48A" }}>
+                        商家推荐
+                      </span>
+                    )}
+                    <span className="text-[14px] font-semibold text-dpInk truncate">{d.text}</span>
+                  </div>
+                  <div className="text-[11px] text-dpText-tertiary mt-0.5">全周可用｜免预约</div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-[17px] font-bold" style={{ color: "#FF3B30" }}>¥{d.price}</span>
+                    {d.off && (
+                      <span className="text-[10px] px-0.5 rounded-sm" style={{ color: "#FF3B30", border: "1px solid #FF3B30" }}>{d.off}</span>
+                    )}
+                    {d.coupon && (
+                      <span className="text-[9.5px] px-1 rounded-sm" style={{ color: "#FF3B30", background: "#FFF0EF" }}>{d.coupon}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="shrink-0 flex flex-col items-end justify-center gap-1">
+                  <span
+                    className="px-3.5 h-8 rounded-full text-white text-[13px] font-medium flex items-center"
+                    style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+                  >
+                    抢购
+                  </span>
+                  <span className="text-[10px] text-dpText-tertiary">半年售 {[800, 400, 200, 59][i] ?? 100}+</span>
+                </div>
+              </div>
+            ))}
+          </div>
 
-          {/* 推荐菜 */}
-          {activeTab === 1 && (
-            <div className="space-y-3">
-              {highlights.map((item, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-[#f9f9f9]">
-                  <span className="text-[14px] text-dpInk">{item}</span>
-                  <span className="text-[12px] text-dpText-tertiary">热门推荐</span>
+          {/* ══ 楼层二:推荐菜(网友推荐 + 菜单) ══ */}
+          <div ref={dishesRef} className="pt-5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[16px] font-bold text-dpInk">推荐菜</span>
+              <span className="text-[11px] text-dpText-tertiary">查看全部 ›</span>
+            </div>
+            <div className="text-[13px] text-dpInk mb-2">网友推荐菜 ({count + 12})</div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+              {highlights.map((name, i) => (
+                <div key={name} className="shrink-0 w-[110px]">
+                  <div className="relative rounded-xl overflow-hidden bg-[#f0f0f0]" style={{ aspectRatio: "1/1" }}>
+                    <img src={photos[i % photos.length]} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    <div
+                      className="absolute bottom-0 left-0 right-0 px-1.5 py-1 text-[10px] text-white"
+                      style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.55), transparent)" }}
+                    >
+                      {[35, 18, 13, 13][i] ?? 8}人推荐
+                    </div>
+                  </div>
+                  <div className="text-[12px] text-dpInk mt-1 truncate">{name}</div>
                 </div>
               ))}
             </div>
-          )}
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#f9f9f9]">
+              <span className="text-[14px] font-semibold text-dpInk">菜单 (3)</span>
+              <div className="flex gap-1">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="w-7 h-7 rounded overflow-hidden bg-[#f0f0f0]">
+                    <img src={photos[i % photos.length]} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-          {/* 评价 */}
-          {activeTab === 2 && (
+          {/* ══ 楼层三:评价(标签 → 关注的人来过 → 私藏收录 → 评价流) ══ */}
+          <div ref={reviewsRef} className="pt-5">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-[16px] font-bold text-dpInk">
+                评价 <span className="text-[12px] font-normal text-dpText-tertiary">({count}) · 4小时前有新增</span>
+              </span>
+              <span className="text-[11px] text-dpText-tertiary">查看全部 ›</span>
+            </div>
+
+            {/* 评价标签 */}
+            <div className="flex gap-1.5 flex-wrap mb-3">
+              {[`高性价比团购 ${Math.round(count / 6)}`, `${poi.category || "菜品"}出品稳 ${Math.round(count / 4)}`, "氛围感 5", "位置好找 28"].map((t) => (
+                <span key={t} className="text-[11.5px] px-2 py-1 rounded-lg" style={{ background: "#FFF6EE", color: "#8a6a4a" }}>
+                  {t}
+                </span>
+              ))}
+            </div>
+
+            {/* 关注的人来过(人格化信任信号 ①) */}
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mb-2" style={{ background: "#FFFAF4" }}>
+              <div className="w-6 h-6 rounded-full overflow-hidden bg-[#f0f0f0] shrink-0">
+                <img src="https://api.dicebear.com/9.x/notionists/svg?seed=%E6%97%A5%E9%85%B1&backgroundColor=ffdfbf" alt="" className="w-full h-full" />
+              </div>
+              <span className="flex-1 text-[12.5px] text-dpInk">1 个关注的人来过</span>
+              <span className="text-[11.5px] flex items-center gap-0.5" style={{ color: "#B08850" }}>
+                去看看
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </div>
+
+            {/* 被收录模块(人格化信任信号 ②:清单为门店背书) */}
+            {includedLists.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+                    </svg>
+                    <span className="text-[13.5px] font-semibold text-dpInk">被 {includedLists.length} 份私藏收录</span>
+                  </div>
+                  <span className="text-[10.5px] text-dpText-tertiary">来自真实去过的人</span>
+                </div>
+                <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+                  {includedLists.slice(0, 3).map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={() => navigate(`/album/${l.id}`)}
+                      className="shrink-0 w-[240px] text-left rounded-2xl p-3"
+                      style={{ background: "#FFFAF5", border: "1px solid #FFE8D5" }}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-[#f0f0f0] shrink-0">
+                          <img src={l.owner.avatar} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="text-[11px] text-dpText-secondary truncate flex-1">{l.owner.name}</span>
+                        <span className="text-[10px] text-dpText-tertiary shrink-0">♡ {l.likeCount}</span>
+                      </div>
+                      <div className="text-[13px] font-semibold text-dpInk truncate">{l.title}</div>
+                      {getReasonFor(l, poi.name) && (
+                        <div
+                          className="text-[11.5px] text-dpText-secondary mt-1 leading-snug"
+                          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                        >
+                          “{getReasonFor(l, poi.name)}”
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-5">
               {/* User's own check-in review */}
               {(caption || checkin?.text) && (
@@ -358,7 +560,7 @@ export default function StoreDetail() {
                 </div>
               ))}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -367,15 +569,17 @@ export default function StoreDetail() {
         className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#f5f5f5] flex items-center gap-3 px-4 pt-3"
         style={{ paddingBottom: 28 }}
       >
-        {/* 收藏 */}
+        {/* 收入私藏(原收藏按钮升级) */}
         <button
-          onClick={handleSave}
+          onClick={() => setSaveSheetOpen(true)}
           className="flex flex-col items-center gap-0.5 min-w-[48px]"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill={saved ? "#FF6F00" : "none"} stroke={saved ? "#FF6F00" : "#999"} strokeWidth="2">
-            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill={inMyList ? "#FF6F00" : "none"} stroke={inMyList ? "#FF6F00" : "#999"} strokeWidth="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
           </svg>
-          <span className="text-[10px]" style={{ color: saved ? "#FF6F00" : "#999" }}>收藏</span>
+          <span className="text-[10px]" style={{ color: inMyList ? "#FF6F00" : "#999" }}>
+            {inMyList ? "已私藏" : "收入私藏"}
+          </span>
         </button>
 
         {/* 打卡 button */}
@@ -404,18 +608,14 @@ export default function StoreDetail() {
         </button>
       </div>
 
-      {/* Save toast */}
-      <AnimatePresence>
-        {toastVisible && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-            className="absolute bottom-28 left-1/2 -translate-x-1/2 whitespace-nowrap px-4 py-2 rounded-full text-white text-[13px]"
-            style={{ background: "rgba(0,0,0,0.72)" }}
-          >
-            {saved ? "已收藏 ❤️" : "已取消收藏"}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 收入私藏弹层 */}
+      <SaveToListSheet
+        open={saveSheetOpen}
+        poi={poi}
+        photo={photos[0]}
+        onClose={() => setSaveSheetOpen(false)}
+        onSaved={() => setListTick((t) => t + 1)}
+      />
     </div>
   );
 }

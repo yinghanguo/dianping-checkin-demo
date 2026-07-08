@@ -10,12 +10,16 @@ import Edit from "./pages/Edit";
 import Success from "./pages/Success";
 import Me from "./pages/Me";
 import Footprint from "./pages/Footprint";
-import MapPlaceholder from "./pages/MapPlaceholder";
+import MapExplore from "./pages/MapExplore";
 import Ranking from "./pages/Ranking";
 import FriendProfile from "./pages/FriendProfile";
 import AlbumDetail from "./pages/AlbumDetail";
 import AlbumCreate from "./pages/AlbumCreate";
 import StoreDetail from "./pages/StoreDetail";
+import Search from "./pages/Search";
+import FoodChannel from "./pages/FoodChannel";
+import WechatShare from "./pages/WechatShare";
+import Collection from "./pages/Collection";
 
 export default function App() {
   return (
@@ -31,13 +35,17 @@ export default function App() {
               <Route path="/success" element={<Success />} />
               <Route path="/me" element={<Me />} />
               <Route path="/footprint" element={<Footprint />} />
-              <Route path="/map" element={<MapPlaceholder />} />
+              <Route path="/map" element={<MapExplore />} />
               <Route path="/ranking" element={<Ranking />} />
               <Route path="/friend-profile" element={<FriendProfile />} />
               <Route path="/album/create" element={<AlbumCreate />} />
               <Route path="/album/:id/edit" element={<AlbumCreate />} />
               <Route path="/album/:id" element={<AlbumDetail />} />
               <Route path="/store" element={<StoreDetail />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/food" element={<FoodChannel />} />
+              <Route path="/wechat-share/:id" element={<WechatShare />} />
+              <Route path="/collection" element={<Collection />} />
             </Routes>
           </PhoneFrame>
         </BrowserRouter>
