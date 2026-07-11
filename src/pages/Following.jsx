@@ -1,3 +1,4 @@
+import nikiAvatar from "../assets/niki-avatar.svg";
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -6,7 +7,7 @@ import { FRIENDS } from "../data/friends";
 import { getUserCheckins } from "../utils/userCheckins";
 
 const NIKI_AVATAR =
-  "https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc";
+  {nikiAvatar};
 
 // 相对时间:刚刚 / X 分钟前 / X 小时前 / 昨天 HH:MM / M/D HH:MM
 function relativeTime(ts) {

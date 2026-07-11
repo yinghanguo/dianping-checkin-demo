@@ -1,3 +1,4 @@
+import nikiAvatar from "../assets/niki-avatar.svg";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,7 +32,7 @@ export default function Ranking() {
     data.push({
       id: "niki",
       name: "Niki",
-      avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc",
+      avatar: {nikiAvatar},
       count: 14,
       isMe: true,
     });
@@ -107,7 +108,7 @@ export default function Ranking() {
         <div className="px-4 flex items-center gap-3 pb-3 border-b border-[#f5f5f5]">
           <div className="w-11 h-11 rounded-full overflow-hidden bg-[#f5f5f5] shrink-0">
             <img
-              src="https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc"
+              src={nikiAvatar}
               alt="" className="w-full h-full"
             />
           </div>

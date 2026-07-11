@@ -110,7 +110,7 @@ export const REAL_LISTS = [
     updatedAt: "7/5",
     allBeenThere: true,
     items: [
-      { poi: poi("禧兴 Liveliness coffee shop", "上海", "黄浦", "咖啡厅", "☕"), photo: IMG.coffee2, reason: "四处喝了一年,仍是最常向人推荐的一家;奶白窗帘配木桌椅像理想客厅,二楼安静又快乐", beenThere: true },
+      { poi: poi("禧兴 Liveliness coffee shop", "上海", "黄浦", "咖啡厅", "☕"), photo: IMG.coffee2, photos: [IMG.coffee2, IMG.bakery, IMG.coffee1], reason: "四处喝了一年,仍是最常向人推荐的一家;奶白窗帘配木桌椅像理想客厅,二楼安静又快乐", beenThere: true },
       { poi: poi("沪水焙煎室(淡水路店)", "上海", "黄浦", "咖啡厅", "☕"), photo: IMG.coffee5, reason: "海苔味 Dirty 是真的有东西,丝丝咸香很上头,老缝纫机的店面设计也用心", beenThere: true },
       { poi: poi("page coffee", "上海", "静安", "咖啡厅", "☕"), photo: IMG.coffee1, reason: "卡布奇诺必须让第一次来的朋友喝上,这次真的喝出了巧克力味道,出品永远稳定", beenThere: true },
       { poi: poi("特写南站", "上海", "徐汇", "咖啡厅", "☕"), photo: IMG.coffee3, reason: "从豆子到用云南土壤烧的杯子都在还原在地感,每个角落都出片,周末记得预约", beenThere: true },
@@ -151,7 +151,7 @@ export const REAL_LISTS = [
     updatedAt: "7/5",
     allBeenThere: true,
     items: [
-      { poi: poi("福禄居·匠 Atelier de Fook(兴业太古汇店)", "上海", "静安", "粤菜馆", "🦐"), photo: IMG.cant1, reason: "头抽红胡椒煎罗氏虾很爱很爱,还有很多道想吃没吃的,下次还来", beenThere: true },
+      { poi: poi("福禄居·匠 Atelier de Fook(兴业太古汇店)", "上海", "静安", "粤菜馆", "🦐"), photo: IMG.cant1, photos: [IMG.cant1, IMG.dimsum, IMG.food2], reason: "头抽红胡椒煎罗氏虾很爱很爱,还有很多道想吃没吃的,下次还来", beenThere: true },
       { poi: poi("金玉满堂潮州酒楼(无限极荟店)", "上海", "黄浦", "潮汕菜", "🦞"), photo: IMG.seafood2, reason: "古法龙趸腩蒸球在我这排名第一,醉花蛤和酥皮牛奶包也名不虚传", beenThere: true },
       { poi: poi("吉友粥底火锅(方斜路店)", "上海", "黄浦", "粥底火锅", "🍲"), photo: IMG.congee, reason: "种草很多年的粥底火锅,米由生煮到烂,没吃到娘子鸡翅所以还得再来一次", beenThere: true },
       { poi: poi("好好彩啫啫煲(人广来福士店)", "上海", "黄浦", "顺德菜", "🥘"), photo: IMG.food1, reason: "清远鸡煲的鸡嫩到犯规,腊味煲仔饭腊肉给的超级多", beenThere: true },

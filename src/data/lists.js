@@ -5,16 +5,17 @@
 import { MY_CHECKINS } from "./myCheckins";
 import { SH_IMG, shPoi } from "./shanghaiStores";
 import { REAL_LISTS } from "./realLists";
+import nikiAvatar from "../assets/niki-avatar.svg";
 
-const STORAGE_KEY = "dp_lists_v3"; // v3:加入真实评价整理的 7 份清单(6 位创作者)
+const STORAGE_KEY = "dp_lists_v5"; // v5:多图支持 + 去除"去过"展示依赖
 const META_KEY = "dp_list_meta_v1";
 const LEGACY_ALBUM_KEY = "dp_albums";
-const LEGACY_LIST_KEYS = ["dp_lists_v2", "dp_lists_v1"];
+const LEGACY_LIST_KEYS = ["dp_lists_v4", "dp_lists_v3", "dp_lists_v2", "dp_lists_v1"];
 
 export const ME = {
   id: "me",
   name: "Niki",
-  avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc",
+  avatar: nikiAvatar,
   level: "Lv.8",
 };
 
@@ -580,6 +581,36 @@ export function effectiveCheckedOff(list) {
   return manual;
 }
 
+// ── 类目归一(选店筛选 / 同主题匹配共用) ──
+export const CATEGORY_BUCKETS = ["美食", "咖啡", "酒店", "景点", "SPA", "购物", "运动", "其他"];
+export function categorize(cat = "") {
+  if (/咖啡/.test(cat)) return "咖啡";
+  if (/酒店|民宿/.test(cat)) return "酒店";
+  if (/SPA|按摩|足疗|美容|美发/i.test(cat)) return "SPA";
+  if (/博物|展览|景点|教堂|公园|广场|建筑|集市|古迹|宗教|山/.test(cat)) return "景点";
+  if (/购物|商场/.test(cat)) return "购物";
+  if (/网球|健身|运动|球场|滑雪|游泳/.test(cat)) return "运动";
+  if (/菜|餐|食|火锅|烧烤|料理|小吃|烘焙|面包|酒馆|酒吧|海鲜|粥|tapas|bar/i.test(cat)) return "美食";
+  return "其他";
+}
+
+// ── 同主题的其他作者清单(仅公域流量的清单尾部使用) ──
+export function getSameThemeLists(list, limit = 6) {
+  const buckets = new Set(list.items.map((it) => categorize(it.poi?.category)));
+  const names = new Set(list.items.map((it) => it.poi?.name));
+  return loadLists()
+    .filter((l) => l.visibility === "public" && l.id !== list.id && l.owner?.id !== list.owner?.id)
+    .map((l) => {
+      const shareStore = l.items.some((it) => names.has(it.poi?.name));
+      const shareTheme = l.items.some((it) => buckets.has(categorize(it.poi?.category)));
+      return { l, score: (shareStore ? 2 : 0) + (shareTheme ? 1 : 0) };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || (b.l.likeCount || 0) - (a.l.likeCount || 0))
+    .slice(0, limit)
+    .map((x) => x.l);
+}
+
 // ── AI 存量转化:从打卡记录生成咖啡清单草稿 ──
 export function buildCoffeeDraft() {
   const coffee = MY_CHECKINS.filter(
@@ -592,15 +623,15 @@ export function buildCoffeeDraft() {
     seen.add(c.poi.name);
     return true;
   });
+  // AI 只做选店筛选,不代写:标题留白由用户自己起;理由带入用户自己发布过的原文
   return {
-    title: "我私藏的咖啡馆地图",
-    description: "AI 从你的打卡记录整理 · 理由摘自你当时写下的话",
+    title: "",
+    description: "",
     items: unique.map((c) => ({
       checkinId: c.id,
       poi: c.poi,
       allPhotos: c.photos,
-      selectedPhoto: c.photos[0],
-      // 理由草稿只从用户自己的打卡文字抽取,绝不虚构;没写过就留空待补
+      photos: [c.photos[0]],
       text: (c.text || "").slice(0, 50),
     })),
   };

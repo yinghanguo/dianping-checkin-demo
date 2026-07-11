@@ -1,3 +1,4 @@
+import nikiAvatar from "../assets/niki-avatar.svg";
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -83,7 +84,7 @@ export default function Me() {
                 style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.1)" }}
               >
                 <img
-                  src="https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc"
+                  src={nikiAvatar}
                   alt=""
                   className="w-full h-full"
                 />
@@ -202,7 +203,7 @@ export default function Me() {
                 你打过卡的咖啡店已有 {coffeeCount} 家
               </div>
               <div className="text-[11px] text-dpText-secondary mt-0.5">
-                AI 帮你整理成一份私藏清单，理由摘自你写过的话
+                AI 帮你把店筛出来，标题和推荐理由由你自己写
               </div>
             </div>
             <button
@@ -210,7 +211,7 @@ export default function Me() {
               className="shrink-0 px-3 h-8 rounded-full text-[12px] text-white font-medium"
               style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
             >
-              ✨ 生成草稿
+              ✨ 帮我筛店
             </button>
             <button
               onClick={dismissDraft}

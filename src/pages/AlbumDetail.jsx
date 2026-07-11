@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   getList,
@@ -8,9 +8,9 @@ import {
   getListMeta,
   setListMeta,
   toggleCheckOff,
-  beenThereStats,
   publicEligibility,
   getPublicListsOf,
+  getSameThemeLists,
   effectiveCheckedOff,
   iHaveBeenTo,
 } from "../data/lists";
@@ -24,6 +24,10 @@ import ListMap from "../components/ListMap";
 export default function AlbumDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { state: navState } = useLocation();
+  // 流量来源:公域(信息流/搜索/地图/店页)可展示其他作者的同主题推荐;
+  // 私域(用户查询的就是这个作者的清单)不加,默认按私域处理
+  const isPublicTraffic = navState?.src === "public";
   const [tick, setTick] = useState(0);
   const list = useMemo(() => getList(id), [id, tick]);
   const meta = useMemo(() => getListMeta(id), [id, tick]);
@@ -34,7 +38,6 @@ export default function AlbumDetail() {
   const [publishSheet, setPublishSheet] = useState(false);
 
   const isMine = list?.owner?.id === "me";
-  const stats = list ? beenThereStats(list) : { been: 0, total: 0, all: false };
   const eligibility = list ? publicEligibility(list) : { ok: false, missing: [] };
   // 拔草进度唯一口径:手动勾选 ∪ 我的真实打卡(与收藏页/Me 页一致)
   const checkedSet = useMemo(
@@ -46,6 +49,11 @@ export default function AlbumDetail() {
   const otherLists = useMemo(
     () => (list && !isMine ? getPublicListsOf(list.owner.name).filter((l) => l.id !== id) : []),
     [list, isMine, id]
+  );
+  // 同主题的其他作者清单(仅公域流量展示)
+  const sameThemeLists = useMemo(
+    () => (list && isPublicTraffic ? getSameThemeLists(list, 6) : []),
+    [list, isPublicTraffic]
   );
 
   if (!list) {
@@ -92,7 +100,9 @@ export default function AlbumDetail() {
 
   const handlePoiClick = (item) => {
     const checkin = MY_CHECKINS.find((c) => c.poi.name === item.poi.name);
-    navigate("/store", { state: { poi: item.poi, photo: item.photo, caption: item.reason, checkin } });
+    navigate("/store", {
+      state: { poi: item.poi, photo: item.photos?.[0] || item.photo, caption: item.reason, checkin },
+    });
   };
 
   const likeDisplay = (list.likeCount || 0) + (meta.liked ? 1 : 0);
@@ -126,20 +136,9 @@ export default function AlbumDetail() {
           {list.description && (
             <div className="text-[12.5px] text-dpText-secondary mt-1.5 leading-relaxed">{list.description}</div>
           )}
-          {/* 信任条 */}
+          {/* 信息条 */}
           <div className="text-[12px] mt-2 flex items-center gap-2 flex-wrap">
             <span className="text-dpText-tertiary">{list.items.length} 家店</span>
-            <span className="text-[#e0e0e0]">·</span>
-            {stats.all ? (
-              <span className="inline-flex items-center gap-1 text-[#2E7D32] font-medium">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="3">
-                  <path d="M5 12l5 5 9-9" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {isMine ? "全部去过" : "作者全部去过"}
-              </span>
-            ) : (
-              <span className="text-dpText-tertiary">{isMine ? `去过 ${stats.been} 家` : `作者去过 ${stats.been} 家`}</span>
-            )}
             <span className="text-[#e0e0e0]">·</span>
             <span className="text-dpText-tertiary">更新于 {list.updatedAt}</span>
           </div>
@@ -229,10 +228,8 @@ export default function AlbumDetail() {
         {/* ── 店卡列表:一句话理由是视觉主体 ── */}
         <div className="px-4 pt-5 pb-4 space-y-7">
           {list.items.map((item, i) => {
-            const been = isMine
-              ? MY_CHECKINS.some((c) => c.poi.name === item.poi.name)
-              : item.beenThere || list.allBeenThere;
             const checked = checkedSet.has(item.poi?.name);
+            const photos = item.photos?.length ? item.photos : item.photo ? [item.photo] : [];
             return (
               <motion.div
                 key={`${item.poi?.name}-${i}`}
@@ -251,17 +248,7 @@ export default function AlbumDetail() {
                       {i + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[15px] font-semibold text-dpInk truncate">{item.poi.name}</span>
-                        {been && (
-                          <span
-                            className="shrink-0 text-[9px] px-1 py-px rounded font-medium"
-                            style={{ background: "#EAF5E2", color: "#2E7D32" }}
-                          >
-                            去过 ✓
-                          </span>
-                        )}
-                      </div>
+                      <div className="text-[15px] font-semibold text-dpInk truncate">{item.poi.name}</div>
                       <div className="text-[11px] text-dpText-tertiary mt-0.5">
                         {item.poi.city} · {item.poi.category}
                       </div>
@@ -299,14 +286,40 @@ export default function AlbumDetail() {
                   </div>
                 )}
 
-                {/* Photo */}
-                <button
-                  className="w-full rounded-2xl overflow-hidden bg-[#f0f0f0] block"
-                  style={{ aspectRatio: "4/3" }}
-                  onClick={() => handlePoiClick(item)}
-                >
-                  <img src={item.photo} alt="" className="w-full h-full object-cover" />
-                </button>
+                {/* Photo(多图横滑) */}
+                {photos.length > 1 ? (
+                  <div className="relative rounded-2xl overflow-hidden">
+                    <div
+                      className="flex overflow-x-auto no-scrollbar"
+                      style={{ scrollSnapType: "x mandatory" }}
+                    >
+                      {photos.map((p, pi) => (
+                        <button
+                          key={pi}
+                          onClick={() => handlePoiClick(item)}
+                          className="w-full shrink-0 bg-[#f0f0f0]"
+                          style={{ aspectRatio: "4/3", scrollSnapAlign: "center" }}
+                        >
+                          <img src={p} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        </button>
+                      ))}
+                    </div>
+                    <div
+                      className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[10px] text-white pointer-events-none"
+                      style={{ background: "rgba(0,0,0,0.5)" }}
+                    >
+                      {photos.length} 张 · 左右滑
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className="w-full rounded-2xl overflow-hidden bg-[#f0f0f0] block"
+                    style={{ aspectRatio: "4/3" }}
+                    onClick={() => handlePoiClick(item)}
+                  >
+                    <img src={photos[0]} alt="" className="w-full h-full object-cover" />
+                  </button>
+                )}
               </motion.div>
             );
           })}
@@ -316,7 +329,7 @@ export default function AlbumDetail() {
         <div className="px-4 pt-4 pb-5 border-t border-[#f5f5f5]">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[14px] font-semibold text-dpInk">清单地图</span>
-            <span className="text-[10.5px] text-dpText-tertiary">按顺序连成路线，照着走就行</span>
+            <span className="text-[10.5px] text-dpText-tertiary">清单里的店都在图上</span>
           </div>
           <ListMap
             list={list}
@@ -350,6 +363,45 @@ export default function AlbumDetail() {
                     </div>
                     <div className="text-[10px] text-dpText-tertiary mt-1">
                       {l.items.length} 家店 · ♡ {l.likeCount}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── 同主题的其他私藏(仅公域流量:信息流/搜索/地图/店页进来时展示) ── */}
+        {sameThemeLists.length > 0 && (
+          <div className="pt-4 pb-5 border-t border-[#f5f5f5]">
+            <div className="px-4 flex items-center justify-between mb-3">
+              <span className="text-[14px] font-semibold text-dpInk">同主题的其他私藏</span>
+              <span className="text-[10.5px] text-dpText-tertiary">来自其他作者</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 pb-1">
+              {sameThemeLists.map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => navigate(`/album/${l.id}`, { state: { src: "public" } })}
+                  className="shrink-0 w-[170px] text-left bg-white rounded-2xl overflow-hidden"
+                  style={{ border: "1px solid #f0f0f0" }}
+                >
+                  <div className="w-full bg-[#f0f0f0]" style={{ aspectRatio: "4/3" }}>
+                    <img src={l.cover} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                  <div className="px-2.5 py-2">
+                    <div
+                      className="text-[12px] font-medium text-dpInk leading-snug"
+                      style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                    >
+                      {l.title}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1.5">
+                      <div className="w-3.5 h-3.5 rounded-full overflow-hidden bg-[#f0f0f0] shrink-0">
+                        <img src={l.owner.avatar} alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-[10px] text-dpText-tertiary truncate flex-1">{l.owner.name}</span>
+                      <span className="text-[10px] text-dpText-tertiary shrink-0">♡ {l.likeCount}</span>
                     </div>
                   </div>
                 </button>

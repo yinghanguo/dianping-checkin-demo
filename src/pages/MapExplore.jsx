@@ -138,12 +138,7 @@ export default function MapExplore() {
     const layer = L.layerGroup();
 
     if (activeList) {
-      // ══ 清单态:只呈现该清单的门店(序号 pin + 虚线路线) ══
-      const latlngs = activeList.points.map((p) => [p.lat, p.lng]);
-      if (latlngs.length >= 2) {
-        L.polyline(latlngs, { color: "#ffffff", weight: 6, opacity: 0.9, lineJoin: "round", lineCap: "round", interactive: false }).addTo(layer);
-        L.polyline(latlngs, { color: "#FF6F00", weight: 3, opacity: 0.9, dashArray: "6 6", lineJoin: "round", lineCap: "round", interactive: false }).addTo(layer);
-      }
+      // ══ 清单态:只呈现该清单的门店(独立序号 pin,不连线) ══
       activeList.points.forEach((p, seq) => {
         const done = activeChecked?.has(p.poi?.name);
         const isSel = selected === p.poi?.name;
@@ -291,7 +286,7 @@ export default function MapExplore() {
               className="absolute left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full text-[11px] text-white whitespace-nowrap"
               style={{ top: 104, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
             >
-              {activeList ? `🚶 ${activeList.title.slice(0, 14)} · ${activeList.points.length} 站` : "🔖 已标记热门门店的私藏收录 · 在下方挑一份清单"}
+              {activeList ? `📍 ${activeList.title.slice(0, 14)} · ${activeList.points.length} 家店` : "🔖 已标记热门门店的私藏收录 · 在下方挑一份清单"}
             </motion.div>
           )}
         </AnimatePresence>
@@ -321,7 +316,7 @@ export default function MapExplore() {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate(`/album/${activeList.id}`)}
+                  onClick={() => navigate(`/album/${activeList.id}`, { state: { src: "public" } })}
                   className="shrink-0 px-3 h-7 rounded-full text-[11.5px] text-white font-medium"
                   style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
                 >
@@ -390,7 +385,7 @@ export default function MapExplore() {
                   <div className="flex-1 min-w-0">
                     <div className="text-[14px] font-bold text-dpInk truncate">{l.title}</div>
                     <div className="text-[10.5px] text-dpText-tertiary mt-0.5">
-                      {l.owner.name} · {l.points.length} 家店 · 作者全部去过 ✓
+                      {l.owner.name} · {l.points.length} 家店 · 更新于 {l.updatedAt}
                     </div>
                     <div className="text-[10.5px] mt-0.5" style={{ color: "#E65000" }}>
                       ♡ {l.likeCount} · 被收藏 {l.saveCount} 次

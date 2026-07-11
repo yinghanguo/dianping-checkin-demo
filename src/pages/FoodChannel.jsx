@@ -187,7 +187,7 @@ export default function FoodChannel() {
             {friendLists.map((l) => (
               <button
                 key={l.id}
-                onClick={() => navigate(`/album/${l.id}`)}
+                onClick={() => navigate(`/album/${l.id}`, { state: { src: "public" } })}
                 className="shrink-0 w-[168px] bg-white rounded-2xl overflow-hidden text-left"
                 style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
               >
@@ -205,7 +205,7 @@ export default function FoodChannel() {
                     {l.title}
                   </div>
                   <div className="text-[10px] text-dpText-tertiary mt-1">
-                    {l.items.length} 家店 · 作者全部去过 ✓ · 藏 {l.saveCount}
+                    {l.items.length} 家店 · 藏 {l.saveCount}
                   </div>
                 </div>
               </button>

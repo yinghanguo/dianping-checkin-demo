@@ -464,13 +464,13 @@ export default function StoreDetail() {
                     </svg>
                     <span className="text-[13.5px] font-semibold text-dpInk">被 {includedLists.length} 份私藏收录</span>
                   </div>
-                  <span className="text-[10.5px] text-dpText-tertiary">来自真实去过的人</span>
+                  <span className="text-[10.5px] text-dpText-tertiary">TA们为什么私藏这家</span>
                 </div>
                 <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
                   {includedLists.slice(0, 3).map((l) => (
                     <button
                       key={l.id}
-                      onClick={() => navigate(`/album/${l.id}`)}
+                      onClick={() => navigate(`/album/${l.id}`, { state: { src: "public" } })}
                       className="shrink-0 w-[240px] text-left rounded-2xl p-3"
                       style={{ background: "#FFFAF5", border: "1px solid #FFE8D5" }}
                     >

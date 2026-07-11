@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FRIENDS } from "../data/friends";
 import { getProfileForFriend } from "../data/friendProfiles";
-import { getPublicListsOf, beenThereStats } from "../data/lists";
+import { getPublicListsOf } from "../data/lists";
 
 // 客态个人主页 — 与主态(Me 页)差异化:
 //   主态强调资产沉淀(去过哪、发过什么);客态强调"给别人看的东西"——
@@ -185,7 +185,6 @@ export default function FriendProfile() {
               ) : (
                 <div className="grid grid-cols-2 gap-2.5">
                   {friendLists.map((l, idx) => {
-                    const stats = beenThereStats(l);
                     return (
                       <motion.button
                         key={l.id}
@@ -198,14 +197,6 @@ export default function FriendProfile() {
                       >
                         <div className="relative w-full bg-[#f0f0f0]" style={{ aspectRatio: "4/3" }}>
                           <img src={l.cover} alt="" className="w-full h-full object-cover" loading="lazy" />
-                          {stats.all && (
-                            <div
-                              className="absolute bottom-1.5 left-1.5 px-1.5 py-px rounded text-[9px] text-white font-medium"
-                              style={{ background: "rgba(46,125,50,0.85)" }}
-                            >
-                              ✓ 作者全部去过
-                            </div>
-                          )}
                         </div>
                         <div className="px-2.5 py-2">
                           <div
@@ -277,12 +268,7 @@ export default function FriendProfile() {
                     <img src={it.photo} alt="" className="w-full h-full object-cover" loading="lazy" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[14px] font-semibold text-dpInk truncate">{it.poi?.name}</span>
-                      <span className="shrink-0 text-[9px] px-1 py-px rounded" style={{ background: "#EAF5E2", color: "#2E7D32" }}>
-                        去过 ✓
-                      </span>
-                    </div>
+                    <div className="text-[14px] font-semibold text-dpInk truncate">{it.poi?.name}</div>
                     <p className="text-[12.5px] text-dpInk leading-relaxed mt-1">“{it.reason}”</p>
                     <div className="text-[10.5px] mt-1" style={{ color: "#B08850" }}>
                       收录于「{it.fromList}」

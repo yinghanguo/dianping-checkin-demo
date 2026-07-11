@@ -1,27 +1,31 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MY_CHECKINS } from "../data/myCheckins";
-import { addList, getList, updateList, publicEligibility, ME, iHaveBeenTo } from "../data/lists";
+import { addList, getList, updateList, publicEligibility, ME, categorize, CATEGORY_BUCKETS } from "../data/lists";
 
 // 私藏清单编辑器(创作主场景)
-// 三条路径汇入:主动新建 / 编辑已有 / AI 草稿预填(location.state.draft)
-// - 每店一句话理由;公开需过门槛(≥3店、理由齐全、非默认标题)
+// - 无 AI 代写:标题/理由全部用户自己写;AI 只保留选店层面的辅助筛选
+// - 照片支持增(上传/从发布带入)删选,多图在清单页横滑展示
+// - 「从我的发布选店」:支持地点筛选 + 类目筛选(美食/咖啡/酒店/景点/SPA/购物/运动…)
+// - 默认公开;发布时不达标弹窗,可改为私密发布
 export default function AlbumCreate() {
   const navigate = useNavigate();
   const { id: editId } = useParams();
   const { state: navState } = useLocation();
   const isEditing = Boolean(editId);
-  const draft = navState?.draft; // AI 存量转化草稿
+  const draft = navState?.draft; // AI 选店筛选结果(仅店集合,不代写)
 
   const [title, setTitle] = useState("");
-  const [visibility, setVisibility] = useState("private");
-  // item: { checkinId, poi, allPhotos, selectedPhoto, text }
+  const [visibility, setVisibility] = useState("public"); // 默认公开
+  // item: { checkinId, poi, allPhotos, photos(已选,首图为封面), text }
   const [items, setItems] = useState([]);
   const [selectSheet, setSelectSheet] = useState(false);
   const [cityFilter, setCityFilter] = useState(null);
+  const [cateFilter, setCateFilter] = useState(null);
   const [pendingIds, setPendingIds] = useState(new Set());
   const [toast, setToast] = useState(null);
+  const [publishIssue, setPublishIssue] = useState(null); // 发布不达标弹窗
   const [fromDraft, setFromDraft] = useState(false);
 
   const showToast = (msg) => {
@@ -29,10 +33,9 @@ export default function AlbumCreate() {
     setTimeout(() => setToast(null), 2400);
   };
 
-  // AI 草稿预填
+  // AI 选店草稿预填(仅店集合;理由带入用户自己发布过的原文)
   useEffect(() => {
     if (!draft || editId) return;
-    setTitle(draft.title || "");
     setItems(draft.items || []);
     setFromDraft(true);
   }, [draft, editId]);
@@ -43,40 +46,50 @@ export default function AlbumCreate() {
     const list = getList(editId);
     if (!list) return;
     setTitle(list.title);
-    setVisibility(list.visibility || "private");
+    setVisibility(list.visibility || "public");
     setItems(
       list.items.map((item) => {
         const checkin = MY_CHECKINS.find(
           (c) => c.poi.name === item.poi.name && c.photos.length > 0
         );
+        const photos = item.photos?.length ? item.photos : item.photo ? [item.photo] : [];
+        const allPhotos = [...new Set([...(checkin?.photos ?? []), ...photos])];
         return {
           checkinId: checkin?.id ?? null,
           poi: item.poi,
-          allPhotos: checkin?.photos ?? (item.photo ? [item.photo] : []),
-          selectedPhoto: item.photo,
+          allPhotos,
+          photos,
           text: item.reason ?? "",
         };
       })
     );
   }, [editId]);
 
-  // ── Derived ──
+  // ── 选店 sheet 的筛选维度 ──
   const cities = useMemo(() => {
     const s = new Set(MY_CHECKINS.filter((c) => c.photos.length > 0).map((c) => c.poi.city));
     return Array.from(s);
   }, []);
 
+  const cates = useMemo(() => {
+    const present = new Set(
+      MY_CHECKINS.filter((c) => c.photos.length > 0).map((c) => categorize(c.poi.category))
+    );
+    return CATEGORY_BUCKETS.filter((b) => present.has(b));
+  }, []);
+
   const filteredCheckins = useMemo(() => {
-    const base = MY_CHECKINS.filter((c) => c.photos.length > 0);
-    return cityFilter ? base.filter((c) => c.poi.city === cityFilter) : base;
-  }, [cityFilter]);
+    let base = MY_CHECKINS.filter((c) => c.photos.length > 0);
+    if (cityFilter) base = base.filter((c) => c.poi.city === cityFilter);
+    if (cateFilter) base = base.filter((c) => categorize(c.poi.category) === cateFilter);
+    return base;
+  }, [cityFilter, cateFilter]);
 
   const addedIds = useMemo(
     () => new Set(items.map((i) => i.checkinId).filter(Boolean)),
     [items]
   );
 
-  // 公开门槛实时校验
   const eligibility = useMemo(
     () =>
       publicEligibility({
@@ -101,8 +114,24 @@ export default function AlbumCreate() {
     });
   };
 
+  // AI 辅助筛选:按当前清单主题(多数类目)圈出候选
+  const handleAiFilter = () => {
+    if (items.length === 0) {
+      showToast("先加一两家店,AI 才知道你的主题");
+      return;
+    }
+    const counts = {};
+    items.forEach((i) => {
+      const b = categorize(i.poi.category);
+      counts[b] = (counts[b] || 0) + 1;
+    });
+    const major = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+    setCateFilter(major);
+    setCityFilter(null);
+    showToast(`✨ 已按「${major}」主题筛出候选`);
+  };
+
   const handleConfirmSelect = () => {
-    // 无 checkinId 的项(从门店页收入的)始终保留;有 checkinId 的按勾选保留
     const keptItems = items.filter((i) => !i.checkinId || pendingIds.has(i.checkinId));
     const newCheckins = MY_CHECKINS.filter(
       (c) => pendingIds.has(c.id) && !addedIds.has(c.id) && c.photos.length > 0
@@ -111,7 +140,7 @@ export default function AlbumCreate() {
       checkinId: c.id,
       poi: c.poi,
       allPhotos: c.photos,
-      selectedPhoto: c.photos[0],
+      photos: [c.photos[0]],
       text: c.text || "",
     }));
     setItems([...keptItems, ...newItems]);
@@ -119,62 +148,23 @@ export default function AlbumCreate() {
   };
 
   // ── Item editing ──
-  const updateItem = (index, field, value) => {
-    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
+  const updateItem = (index, patch) => {
+    setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   };
 
   const removeItem = (index) => {
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ── AI title generation (mock) ──
-  const generateTitle = () => {
-    if (items.length === 0) return;
-    const uniqueCities = [...new Set(items.map((i) => i.poi.city))];
-    const cats = items.map((i) => i.poi.category);
-    const isFood = cats.some((c) =>
-      ["美食", "餐", "咖啡", "西班牙", "tapas", "小吃"].some((k) => c.includes(k))
-    );
-    const isSight = cats.some((c) =>
-      ["景点", "博物", "教堂", "古迹", "宗教", "公园"].some((k) => c.includes(k))
-    );
-    let gen = "";
-    if (uniqueCities.length === 1) {
-      if (isFood && !isSight) gen = `${uniqueCities[0]}不容错过的 ${items.length} 家`;
-      else if (isSight && !isFood) gen = `${uniqueCities[0]}必打卡的景点精选`;
-      else gen = `${uniqueCities[0]} · 我的私藏`;
-    } else if (uniqueCities.length === 2) {
-      gen = `${uniqueCities[0]} & ${uniqueCities[1]} 私藏精选`;
-    } else {
-      gen = `${uniqueCities.length} 座城市的 ${items.length} 个私藏`;
-    }
-    setTitle(gen);
-  };
-
-  // ── 公开切换 ──
-  const handleToggleVisibility = () => {
-    if (visibility === "public") {
-      setVisibility("private");
-      return;
-    }
-    if (!eligibility.ok) {
-      showToast(`还差一步：${eligibility.missing[0]}`);
-      return;
-    }
-    setVisibility("public");
-  };
-
-  // ── Save ──
-  const handleSave = () => {
-    if (visibility === "public" && !eligibility.ok) {
-      showToast(`公开需要：${eligibility.missing[0]}`);
-      return;
-    }
-    const cover = items[0]?.selectedPhoto || "";
+  // ── Save / Publish ──
+  const doSave = (vis) => {
+    const first = items[0];
+    const cover = first?.photos?.[0] || "";
     const now = new Date();
     const listItems = items.map((item) => ({
       poi: item.poi,
-      photo: item.selectedPhoto,
+      photos: item.photos,
+      photo: item.photos?.[0] || "",
       reason: item.text?.trim() || "",
     }));
     if (isEditing) {
@@ -183,7 +173,7 @@ export default function AlbumCreate() {
         ...existing,
         title: title.trim() || existing.title,
         cover: cover || existing.cover,
-        visibility,
+        visibility: vis,
         items: listItems,
       });
       navigate(`/album/${editId}`, { replace: true });
@@ -192,9 +182,9 @@ export default function AlbumCreate() {
         id: `list_${Date.now()}`,
         owner: ME,
         title: title.trim() || "我的私藏清单",
-        description: fromDraft ? "从我的打卡记录整理" : "",
+        description: "",
         cover,
-        visibility,
+        visibility: vis,
         likeCount: 0,
         saveCount: 0,
         createdAt: `${now.getMonth() + 1}/${now.getDate()}`,
@@ -204,6 +194,14 @@ export default function AlbumCreate() {
       addList(list);
       navigate(`/album/${list.id}`, { replace: true });
     }
+  };
+
+  const handlePublish = () => {
+    if (visibility === "public" && !eligibility.ok) {
+      setPublishIssue(eligibility.missing); // 弹窗:可改私密发布
+      return;
+    }
+    doSave(visibility);
   };
 
   return (
@@ -220,18 +218,18 @@ export default function AlbumCreate() {
         </div>
         {items.length > 0 && (
           <button
-            onClick={handleSave}
+            onClick={handlePublish}
             className="px-4 h-7 rounded-full text-white text-[12px] font-medium shrink-0"
             style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
           >
-            {visibility === "public" ? "公开发布" : "保存"}
+            发布
           </button>
         )}
       </div>
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        {/* ── AI 草稿提示条 ── */}
+        {/* ── AI 选店提示条(仅筛选,不代写) ── */}
         {fromDraft && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -241,16 +239,16 @@ export default function AlbumCreate() {
           >
             <span className="text-lg leading-none mt-0.5">✨</span>
             <div className="text-[12px] text-dpInk leading-relaxed">
-              <span className="font-semibold">AI 已按你的打卡记录整理好草稿。</span>
+              <span className="font-semibold">AI 从你的发布里筛出了这些店。</span>
               <br />
               <span className="text-dpText-secondary">
-                推荐理由摘自你当时写下的话——删掉不想要的，补上空缺的，就可以公开了。
+                删掉不想要的;标题和推荐理由由你自己来写——理由已带入你当时发布的原文,可直接修改。
               </span>
             </div>
           </motion.div>
         )}
 
-        {/* ── Title field ── */}
+        {/* ── Title field(无 AI 生成) ── */}
         <div
           className="mx-4 mt-4 bg-white rounded-2xl px-4 py-3"
           style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
@@ -258,62 +256,12 @@ export default function AlbumCreate() {
           <div className="text-[11px] text-dpText-tertiary font-medium mb-1.5 tracking-wide uppercase">
             清单主题
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="一个主题口径，比如「适合请客的本帮菜」"
-              className="flex-1 text-[15px] text-dpInk placeholder-[#bbb] outline-none bg-transparent"
-            />
-            <button
-              onClick={generateTitle}
-              disabled={items.length === 0}
-              className="shrink-0 flex items-center gap-1 px-2.5 h-6 rounded-full text-[11px] font-medium transition-all"
-              style={{
-                background:
-                  items.length > 0 ? "linear-gradient(135deg, #FF6F00, #FFA040)" : "#f0f0f0",
-                color: items.length > 0 ? "white" : "#ccc",
-              }}
-            >
-              ✨ AI生成
-            </button>
-          </div>
-        </div>
-
-        {/* ── 公开开关 ── */}
-        <div
-          className="mx-4 mt-3 bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3"
-          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-        >
-          <div className="flex-1">
-            <div className="text-[13.5px] font-medium text-dpInk">
-              {visibility === "public" ? "公开这份私藏" : "私密清单"}
-            </div>
-            <div className="text-[11px] text-dpText-tertiary mt-0.5 leading-relaxed">
-              {visibility === "public"
-                ? "会出现在你的主页，可能被分发到门店页与搜索"
-                : eligibility.ok
-                ? "已满足公开条件，随时可以公开"
-                : `公开需要：${eligibility.missing.join("、")}`}
-            </div>
-          </div>
-          <button
-            onClick={handleToggleVisibility}
-            className="shrink-0 rounded-full transition-all relative"
-            style={{
-              width: 46,
-              height: 27,
-              background: visibility === "public" ? "linear-gradient(135deg, #FF6F00, #FFA040)" : "#e0e0e0",
-            }}
-          >
-            <div
-              className="absolute top-[3px] w-[21px] h-[21px] rounded-full bg-white transition-all"
-              style={{
-                left: visibility === "public" ? 22 : 3,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-              }}
-            />
-          </button>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="一个主题口径，比如「适合请客的本帮菜」"
+            className="w-full text-[15px] text-dpInk placeholder-[#bbb] outline-none bg-transparent"
+          />
         </div>
 
         {/* ── Item cards ── */}
@@ -324,9 +272,7 @@ export default function AlbumCreate() {
                 key={item.checkinId ?? `${item.poi?.name}-${i}`}
                 item={item}
                 index={i}
-                been={iHaveBeenTo(item.poi?.name)}
-                onUpdatePhoto={(photo) => updateItem(i, "selectedPhoto", photo)}
-                onUpdateText={(text) => updateItem(i, "text", text)}
+                onUpdate={(patch) => updateItem(i, patch)}
                 onRemove={() => removeItem(i)}
               />
             ))}
@@ -337,8 +283,8 @@ export default function AlbumCreate() {
         {items.length === 0 && (
           <div className="flex flex-col items-center justify-center h-44 gap-2 mt-4">
             <div className="text-[40px]">📍</div>
-            <div className="text-[14px] text-dpInk font-medium">从你的足迹里挑店</div>
-            <div className="text-[12px] text-dpText-tertiary">照片和推荐理由会从打卡记录自动拉取</div>
+            <div className="text-[14px] text-dpInk font-medium">从你的发布里挑店</div>
+            <div className="text-[12px] text-dpText-tertiary">照片和文字会从你的发布自动带入</div>
           </div>
         )}
 
@@ -352,7 +298,38 @@ export default function AlbumCreate() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M12 5v14M5 12h14" strokeLinecap="round" />
             </svg>
-            从我的足迹选店
+            从我的发布选店
+          </button>
+        </div>
+
+        {/* ── 可见性(清单最底部,默认公开) ── */}
+        <div
+          className="mx-4 mb-6 bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+        >
+          <div className="flex-1">
+            <div className="text-[13.5px] font-medium text-dpInk">
+              {visibility === "public" ? "公开发布" : "私密清单"}
+            </div>
+            <div className="text-[11px] text-dpText-tertiary mt-0.5 leading-relaxed">
+              {visibility === "public"
+                ? "发布后出现在你的主页，可能被分发到门店页与搜索"
+                : "仅自己可见，随时可以再公开"}
+            </div>
+          </div>
+          <button
+            onClick={() => setVisibility((v) => (v === "public" ? "private" : "public"))}
+            className="shrink-0 rounded-full transition-all relative"
+            style={{
+              width: 46,
+              height: 27,
+              background: visibility === "public" ? "linear-gradient(135deg, #FF6F00, #FFA040)" : "#e0e0e0",
+            }}
+          >
+            <div
+              className="absolute top-[3px] w-[21px] h-[21px] rounded-full bg-white transition-all"
+              style={{ left: visibility === "public" ? 22 : 3, boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}
+            />
           </button>
         </div>
 
@@ -372,7 +349,55 @@ export default function AlbumCreate() {
         )}
       </AnimatePresence>
 
-      {/* ── Multi-select Sheet ── */}
+      {/* ── 发布不达标弹窗:可改私密发布 ── */}
+      <AnimatePresence>
+        {publishIssue && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 z-[102] bg-black/50"
+              onClick={() => setPublishIssue(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }}
+              className="absolute z-[103] bg-white rounded-2xl mx-6 overflow-hidden"
+              style={{ top: "50%", left: 0, right: 0, transform: "translateY(-50%)" }}
+            >
+              <div className="px-5 pt-6 pb-4">
+                <div className="text-[17px] font-semibold text-dpInk text-center mb-2">还不满足公开条件</div>
+                <div className="text-[13px] text-dpText-secondary leading-relaxed text-center mb-3">
+                  公开的清单需要:
+                </div>
+                <div className="space-y-1.5">
+                  {publishIssue.map((m) => (
+                    <div key={m} className="flex items-center gap-2 text-[13px] text-dpInk">
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#FF6F00" }} />
+                      {m}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-[#f0f0f0] flex">
+                <button
+                  onClick={() => { setPublishIssue(null); setVisibility("private"); doSave("private"); }}
+                  className="flex-1 py-3.5 text-[14px] text-dpText-secondary border-r border-[#f0f0f0]"
+                >
+                  改为私密并发布
+                </button>
+                <button
+                  onClick={() => setPublishIssue(null)}
+                  className="flex-1 py-3.5 text-[14px] font-medium"
+                  style={{ color: "#E65000" }}
+                >
+                  继续完善
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── 从我的发布选店 Sheet ── */}
       <AnimatePresence>
         {selectSheet && (
           <>
@@ -397,7 +422,7 @@ export default function AlbumCreate() {
 
               <div className="px-5 pt-2 pb-3 shrink-0 border-b border-[#f5f5f5] flex items-center justify-between">
                 <div>
-                  <div className="text-[16px] font-semibold text-dpInk">从足迹选店</div>
+                  <div className="text-[16px] font-semibold text-dpInk">从我的发布选店</div>
                   <div className="text-[11px] text-dpOrange-deep mt-0.5 h-4">
                     {pendingIds.size > 0 ? `已选 ${pendingIds.size} 个` : " "}
                   </div>
@@ -411,8 +436,40 @@ export default function AlbumCreate() {
                 </button>
               </div>
 
-              {/* City filter */}
-              <div className="px-5 py-2.5 border-b border-[#f5f5f5] shrink-0">
+              {/* 类目筛选 + AI 辅助筛选 */}
+              <div className="px-5 py-2 border-b border-[#f5f5f5] shrink-0">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+                  <button
+                    onClick={handleAiFilter}
+                    className="shrink-0 px-3 h-7 rounded-full text-[12px] font-medium text-white"
+                    style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+                  >
+                    ✨ AI 按主题筛
+                  </button>
+                  <button
+                    onClick={() => setCateFilter(null)}
+                    className={`shrink-0 px-3 h-7 rounded-full text-[12px] font-medium ${
+                      !cateFilter ? "bg-dpInk text-white" : "bg-[#F5F5F5] text-dpText-secondary"
+                    }`}
+                  >
+                    全部类目
+                  </button>
+                  {cates.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCateFilter(c === cateFilter ? null : c)}
+                      className={`shrink-0 px-3 h-7 rounded-full text-[12px] font-medium ${
+                        cateFilter === c ? "bg-dpInk text-white" : "bg-[#F5F5F5] text-dpText-secondary"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 地点筛选 */}
+              <div className="px-5 py-2 border-b border-[#f5f5f5] shrink-0">
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
                   <button
                     onClick={() => setCityFilter(null)}
@@ -420,16 +477,14 @@ export default function AlbumCreate() {
                       !cityFilter ? "bg-dpInk text-white" : "bg-[#F5F5F5] text-dpText-secondary"
                     }`}
                   >
-                    全部
+                    全部地点
                   </button>
                   {cities.map((city) => (
                     <button
                       key={city}
                       onClick={() => setCityFilter(city === cityFilter ? null : city)}
                       className={`shrink-0 px-3 h-7 rounded-full text-[12px] font-medium ${
-                        cityFilter === city
-                          ? "bg-dpInk text-white"
-                          : "bg-[#F5F5F5] text-dpText-secondary"
+                        cityFilter === city ? "bg-dpInk text-white" : "bg-[#F5F5F5] text-dpText-secondary"
                       }`}
                     >
                       {city}
@@ -440,6 +495,11 @@ export default function AlbumCreate() {
 
               {/* Checkin list */}
               <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-1">
+                {filteredCheckins.length === 0 && (
+                  <div className="text-center text-[12px] text-dpText-tertiary py-10">
+                    这个筛选下没有发布记录
+                  </div>
+                )}
                 {filteredCheckins.map((c) => {
                   const checked = pendingIds.has(c.id);
                   return (
@@ -465,7 +525,7 @@ export default function AlbumCreate() {
                       <div className="flex-1 min-w-0">
                         <div className="text-[14px] font-medium text-dpInk truncate">{c.poi.name}</div>
                         <div className="text-[11px] text-dpText-tertiary mt-0.5">
-                          {c.poi.city} · {c.date}
+                          {c.poi.city} · {categorize(c.poi.category)} · {c.date}
                         </div>
                       </div>
                     </button>
@@ -480,9 +540,25 @@ export default function AlbumCreate() {
   );
 }
 
-// ── Item card with inline editing ──
-function ItemCard({ item, index, been, onUpdatePhoto, onUpdateText, onRemove }) {
+// ── Item card:多图增删选 + 理由编辑 ──
+function ItemCard({ item, index, onUpdate, onRemove }) {
+  const fileRef = useRef(null);
   const missingReason = !item.text?.trim();
+  const photos = item.photos || [];
+
+  // 从发布带入的候选(未选中的)
+  const candidates = (item.allPhotos || []).filter((p) => !photos.includes(p));
+
+  const removePhoto = (p) => onUpdate({ photos: photos.filter((x) => x !== p) });
+  const addPhoto = (p) => onUpdate({ photos: [...photos, p] });
+  const handleUpload = (e) => {
+    const files = [...(e.target.files || [])];
+    if (!files.length) return;
+    const urls = files.map((f) => URL.createObjectURL(f));
+    onUpdate({ photos: [...photos, ...urls], allPhotos: [...(item.allPhotos || []), ...urls] });
+    e.target.value = "";
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -499,17 +575,7 @@ function ItemCard({ item, index, been, onUpdatePhoto, onUpdateText, onRemove }) 
           {index + 1}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[13px] font-semibold text-dpInk truncate">{item.poi.name}</span>
-            {been && (
-              <span
-                className="shrink-0 text-[9px] px-1 py-px rounded font-medium"
-                style={{ background: "#EAF5E2", color: "#2E7D32" }}
-              >
-                去过 ✓
-              </span>
-            )}
-          </div>
+          <div className="text-[13px] font-semibold text-dpInk truncate">{item.poi.name}</div>
           <div className="text-[11px] text-dpText-tertiary">
             {item.poi.city} · {item.poi.category}
           </div>
@@ -521,28 +587,74 @@ function ItemCard({ item, index, been, onUpdatePhoto, onUpdateText, onRemove }) 
         </button>
       </div>
 
-      {/* Photo selector */}
-      {item.allPhotos?.length > 0 && (
-        <div className="px-3 pb-2">
-          <div className="text-[11px] text-dpText-tertiary mb-1.5">选择照片</div>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
-            {item.allPhotos.map((p, i) => (
-              <button
-                key={i}
-                onClick={() => onUpdatePhoto(p)}
-                className={`shrink-0 rounded-xl overflow-hidden transition-all ${
-                  item.selectedPhoto === p ? "ring-2 ring-dpOrange ring-offset-1" : "opacity-55"
-                }`}
+      {/* 已选照片(可删,首图为封面) + 上传 */}
+      <div className="px-3 pb-2">
+        <div className="text-[11px] text-dpText-tertiary mb-1.5">
+          照片{photos.length > 0 ? `（${photos.length} 张,首图为封面）` : "（至少一张）"}
+        </div>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+          {photos.map((p, i) => (
+            <div key={p} className="relative shrink-0">
+              <div
+                className={`rounded-xl overflow-hidden ${i === 0 ? "ring-2 ring-dpOrange ring-offset-1" : ""}`}
                 style={{ width: 72, height: 72 }}
               >
                 <img src={p} alt="" className="w-full h-full object-cover" />
+              </div>
+              {i === 0 && (
+                <span
+                  className="absolute bottom-1 left-1 px-1 rounded text-[8px] text-white"
+                  style={{ background: "rgba(255,111,0,0.9)" }}
+                >
+                  封面
+                </span>
+              )}
+              <button
+                onClick={() => removePhoto(p)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center"
+              >
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                  <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
+                </svg>
               </button>
-            ))}
-          </div>
+            </div>
+          ))}
+          {/* 上传 */}
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="shrink-0 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-0.5"
+            style={{ width: 72, height: 72, borderColor: "#FFD5B0", color: "#E65000" }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+            <span className="text-[9px]">上传</span>
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
         </div>
-      )}
 
-      {/* 一句话推荐理由 */}
+        {/* 从发布带入的候选照片 */}
+        {candidates.length > 0 && (
+          <>
+            <div className="text-[10.5px] text-dpText-tertiary mt-2 mb-1">从你的发布带入(点击添加)</div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+              {candidates.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => addPhoto(p)}
+                  className="shrink-0 rounded-xl overflow-hidden opacity-55 relative"
+                  style={{ width: 56, height: 56 }}
+                >
+                  <img src={p} alt="" className="w-full h-full object-cover" />
+                  <span className="absolute inset-0 flex items-center justify-center text-white text-[16px]" style={{ background: "rgba(0,0,0,0.18)" }}>+</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 一句话推荐理由(用户自己写) */}
       <div className="px-3 pb-3">
         <div className="flex items-center gap-1.5 mb-1.5">
           <span className="text-[11px] text-dpText-tertiary">一句话推荐理由</span>
@@ -554,7 +666,7 @@ function ItemCard({ item, index, been, onUpdatePhoto, onUpdateText, onRemove }) 
         </div>
         <textarea
           value={item.text}
-          onChange={(e) => onUpdateText(e.target.value)}
+          onChange={(e) => onUpdate({ text: e.target.value })}
           placeholder="为什么是这家？一句话就够"
           className="w-full bg-[#F8F8F8] rounded-xl px-3 py-2.5 text-[13px] text-dpInk resize-none outline-none placeholder-[#bbb] leading-relaxed"
           rows={2}
