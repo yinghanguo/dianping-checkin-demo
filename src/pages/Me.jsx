@@ -10,7 +10,7 @@ import {
   getSavedLists,
   effectiveCheckedOff,
   buildCoffeeDraft,
-  countCoffeeCheckins,
+  getRecentCoffeeCheckins,
 } from "../data/lists";
 
 // 「我的」页 — 高度还原点评原生设计
@@ -39,7 +39,7 @@ export default function Me() {
 
   const myLists = useMemo(() => getMyLists(), [photoTab]);
   const savedLists = useMemo(() => getSavedLists(), [photoTab]);
-  const coffeeCount = useMemo(() => countCoffeeCheckins(), []);
+  const recentCoffee = useMemo(() => getRecentCoffeeCheckins(7), []);
   const totalListSaves = myLists.reduce((s, l) => s + (l.saveCount || 0), 0);
 
   const handleDraft = () => {
@@ -185,8 +185,8 @@ export default function Me() {
           />
         </div>
 
-        {/* ── AI 存量转化气泡:创作零成本的入口 ── */}
-        {!draftDismissed && (
+        {/* ── 存量转化引导:近期打卡的咖啡店 ── */}
+        {!draftDismissed && recentCoffee.length >= 3 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -197,13 +197,32 @@ export default function Me() {
               border: "1px solid rgba(255,111,0,0.18)",
             }}
           >
-            <div className="text-[26px] shrink-0">☕</div>
+            {/* 近期咖啡店照片堆叠 */}
+            <div className="flex -space-x-2.5 shrink-0">
+              {recentCoffee.slice(0, 5).map((c, i) => (
+                <div
+                  key={c.id}
+                  className="w-8 h-8 rounded-full overflow-hidden border-2 border-white bg-[#f0f0f0]"
+                  style={{ zIndex: 5 - i }}
+                >
+                  <img src={c.photos[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
+                </div>
+              ))}
+              {recentCoffee.length > 5 && (
+                <div
+                  className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white"
+                  style={{ background: "rgba(255,111,0,0.85)", zIndex: 0 }}
+                >
+                  +{recentCoffee.length - 5}
+                </div>
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-semibold text-dpInk leading-snug">
-                你打过卡的咖啡店已有 {coffeeCount} 家
+                最近打卡了 {recentCoffee.length} 家咖啡店
               </div>
               <div className="text-[11px] text-dpText-secondary mt-0.5">
-                AI 帮你把店筛出来，标题和推荐理由由你自己写
+                顺手整理成一份私藏清单？
               </div>
             </div>
             <button
@@ -211,7 +230,7 @@ export default function Me() {
               className="shrink-0 px-3 h-8 rounded-full text-[12px] text-white font-medium"
               style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
             >
-              ✨ 帮我筛店
+              生成草稿
             </button>
             <button
               onClick={dismissDraft}

@@ -611,18 +611,19 @@ export function getSameThemeLists(list, limit = 6) {
     .map((x) => x.l);
 }
 
-// ── AI 存量转化:从打卡记录生成咖啡清单草稿 ──
-export function buildCoffeeDraft() {
-  const coffee = MY_CHECKINS.filter(
-    (c) => c.poi?.category?.includes("咖啡") && c.photos?.length > 0
-  );
-  // 按店去重
+// ── 存量转化:近期打卡的咖啡店(MY_CHECKINS 为时间倒序,取最近去重的 N 家) ──
+export function getRecentCoffeeCheckins(limit = 7) {
   const seen = new Set();
-  const unique = coffee.filter((c) => {
+  return MY_CHECKINS.filter((c) => {
+    if (!c.poi?.category?.includes("咖啡") || !c.photos?.length) return false;
     if (seen.has(c.poi.name)) return false;
     seen.add(c.poi.name);
     return true;
-  });
+  }).slice(0, limit);
+}
+
+export function buildCoffeeDraft(limit = 7) {
+  const unique = getRecentCoffeeCheckins(limit);
   // AI 只做选店筛选,不代写:标题留白由用户自己起;理由带入用户自己发布过的原文
   return {
     title: "",
