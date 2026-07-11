@@ -11,6 +11,8 @@ const ZOE = { id: "friend-1", name: "一只美食界的Zoe...", avatar: avatar("
 const RIJIANG = { id: "friend-2", name: "日酱", avatar: avatar("日酱", "ffdfbf"), level: "Lv.7" };
 const HUAHUA = { id: "friend-17", name: "花花花花花", avatar: avatar("花花花花花", "e0f2f1"), level: "Lv.6" };
 const FITZ = { id: "friend-14", name: "Fitz", avatar: avatar("Fitz", "dcedc8"), level: "Lv.6" };
+const HARDYGU = { id: "friend-12", name: "hardygu", avatar: avatar("hardygu", "b3e5fc"), level: "Lv.7" };
+const ATT = { id: "friend-13", name: "AT", avatar: avatar("AT", "ffe0b2"), level: "Lv.5" };
 const WENDY = { id: "friend-28", name: "WinWinWendy", avatar: avatar("WinWinWendy", "f8bbd0"), level: "Lv.7" };
 
 // ── 配图(unsplash,均已验证可用) ──
@@ -39,6 +41,9 @@ const IMG = {
   dish: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80",
   tennis1: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=600&q=80",
   tennis2: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?w=600&q=80",
+  tennis3: "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=600&q=80",
+  tennis4: "https://images.unsplash.com/photo-1526307616774-60d0098f7642?w=600&q=80",
+  tennis5: "https://images.unsplash.com/photo-1560012057-4372e14c5085?w=600&q=80",
   bali1: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80",
   bali2: "https://images.unsplash.com/photo-1512100356356-de1b84283e18?w=600&q=80",
   bar: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&q=80",
@@ -85,6 +90,7 @@ export const REAL_COORDS = {
   "WoW Tennis 沃梧网球": { lat: 31.208, lng: 121.462 },
   "至臻网球(长阳路店)": { lat: 31.262, lng: 121.533 },
   "天钥桥路909号顶楼网球场": { lat: 31.183, lng: 121.438 },
+  "Tennisline 国际网球学院(静安球场)": { lat: 31.238, lng: 121.447 },
   // G 巴厘岛
   "Shelter Restaurant": { lat: -8.648, lng: 115.138 },
   "Santanera": { lat: -8.66, lng: 115.13 },
@@ -204,12 +210,12 @@ export const REAL_LISTS = [
       { poi: poi("边水恰恰·云南边境菜", "上海", "静安", "云南菜", "🐟"), photo: IMG.food2, reason: "不知道是哪里的边境,但挺云南的;油焖鸡到柠檬草花甲一路无踩雷", beenThere: true },
     ],
   },
-  // F ────────────────────────────────────────
+  // F ──── 网球 ×3(三位创作者,门店刻意重叠,支撑"同主题的其他私藏"推荐) ────
   {
     id: "list_r_tennis",
     owner: FITZ,
-    title: "从静安打到徐汇:我的网球场清单",
-    description: "跟着王教练从正手反手学到截击切削,场地也跟着换了一路。",
+    title: "从静安打到徐汇:跟着王教练换场地",
+    description: "跟着王教练从正手反手学到截击切削,场地也跟着换了一路,现在开始学发球了。",
     cover: IMG.tennis1,
     visibility: "public",
     likeCount: 687,
@@ -219,10 +225,44 @@ export const REAL_LISTS = [
     allBeenThere: true,
     items: [
       { poi: poi("至臻网球(静安大宁店)", "上海", "静安", "网球场", "🎾"), photo: IMG.tennis1, reason: "纯室内有空调,夏天打球的救命场;8折卡后 256/h,提前几天就约得到", beenThere: true },
-      { poi: poi("WoW Tennis 沃梧网球", "上海", "徐汇", "网球场", "🎾"), photo: IMG.tennis2, reason: "嘉善路藏着的蓝色球场,傍晚能看日落;王教练看动作看得准,脾气还好", beenThere: true },
-      { poi: poi("至臻网球(长阳路店)", "上海", "杨浦", "网球场", "🎾"), photo: IMG.tennis1, reason: "以前冬夏休耕,今年在这一年没断;前台会帮忙把发球机调到超级合适", beenThere: true },
-      { poi: poi("至臻网球(杨浦黄兴店)", "上海", "杨浦", "网球场", "🎾"), photo: IMG.tennis2, reason: "场地纵深长,深球也接得住;没搭子就打发球机,还能偷看隔壁高手打球", beenThere: true },
-      { poi: poi("天钥桥路909号顶楼网球场", "上海", "徐汇", "网球场", "🎾"), photo: IMG.tennis2, reason: "天钥桥路909号3号楼的顶楼,知道的人不多的天台球场", beenThere: true },
+      { poi: poi("至臻网球(杨浦黄兴店)", "上海", "杨浦", "网球场", "🎾"), photo: IMG.tennis4, reason: "场地纵深长,深球也接得住;没搭子就打发球机,还能偷看隔壁高手打球", beenThere: true },
+      { poi: poi("WoW Tennis 沃梧网球", "上海", "徐汇", "网球场", "🎾"), photo: IMG.tennis2, reason: "王教练看动作看得准,指导几下就有改善,脾气好从不着急;蓝色地胶很出片", beenThere: true },
+    ],
+  },
+  {
+    id: "list_r_tennis_zhizhen",
+    owner: HARDYGU,
+    title: "至臻网球老会员的分店实测",
+    description: "充5000打8折,每周都来;三家分店各有各的用法,按需选场。",
+    cover: IMG.tennis4,
+    visibility: "public",
+    likeCount: 512,
+    saveCount: 198,
+    createdAt: "6/26",
+    updatedAt: "12/26",
+    allBeenThere: true,
+    items: [
+      { poi: poi("至臻网球(长阳路店)", "上海", "杨浦", "网球场", "🎾"), photo: IMG.tennis3, reason: "中午时段8折卡超级划算,前台会帮忙把发球机调到超级合适,每次来像回家一样", beenThere: true },
+      { poi: poi("至臻网球(杨浦黄兴店)", "上海", "杨浦", "网球场", "🎾"), photo: IMG.tennis4, reason: "顶棚高,下雨也能打且不会打到顶;场地间有隔网互不影响", beenThere: true },
+      { poi: poi("至臻网球(静安大宁店)", "上海", "静安", "网球场", "🎾"), photo: IMG.tennis1, reason: "最里面一片双打场提供球,外面四片单打场可以打发球机,门口就是停车场", beenThere: true },
+    ],
+  },
+  {
+    id: "list_r_tennis_photo",
+    owner: ATT,
+    title: "出片的城市球场:天台、日落和紫色地胶",
+    description: "打球是次要的,拍出来好看才是正经事(不是)。",
+    cover: IMG.tennis5,
+    visibility: "public",
+    likeCount: 903,
+    saveCount: 371,
+    createdAt: "4/6",
+    updatedAt: "5/17",
+    allBeenThere: true,
+    items: [
+      { poi: poi("天钥桥路909号顶楼网球场", "上海", "徐汇", "网球场", "🎾"), photo: IMG.tennis5, reason: "天钥桥路909号3号楼的顶楼,知道的人不多的天台球场,拍拍子都出片", beenThere: true },
+      { poi: poi("Tennisline 国际网球学院(静安球场)", "上海", "静安", "网球场", "🎾"), photo: IMG.tennis3, reason: "紫色地胶配环绕的居民楼,城市球场该有的样子都在这了", beenThere: true },
+      { poi: poi("WoW Tennis 沃梧网球", "上海", "徐汇", "网球场", "🎾"), photo: IMG.tennis2, reason: "蓝色地胶很出片,听说傍晚天气好的时候球场可以看到日落", beenThere: true },
     ],
   },
   // G ────────────────────────────────────────
