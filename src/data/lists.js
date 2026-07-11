@@ -4,11 +4,12 @@
 //   - 新增互动(点赞/收藏/订阅)与拔草(checkOff)，存在独立的 meta 存储里
 import { MY_CHECKINS } from "./myCheckins";
 import { SH_IMG, shPoi } from "./shanghaiStores";
+import { REAL_LISTS } from "./realLists";
 
-const STORAGE_KEY = "dp_lists_v2"; // v2:加入上海南京西路清单数据
+const STORAGE_KEY = "dp_lists_v3"; // v3:加入真实评价整理的 7 份清单(6 位创作者)
 const META_KEY = "dp_list_meta_v1";
 const LEGACY_ALBUM_KEY = "dp_albums";
-const LEGACY_LIST_KEY = "dp_lists_v1";
+const LEGACY_LIST_KEYS = ["dp_lists_v2", "dp_lists_v1"];
 
 export const ME = {
   id: "me",
@@ -441,18 +442,21 @@ function seed() {
       myLists = [...extras, ...MY_INITIAL_LISTS];
     }
   } catch {}
-  // v1 → v2 迁移:保留用户在 v1 里自建的清单(id 为时间戳后缀)
-  try {
-    const v1 = localStorage.getItem(LEGACY_LIST_KEY);
-    if (v1) {
-      const prev = JSON.parse(v1);
-      const userMade = prev.filter(
-        (l) => l.owner?.id === "me" && /^list_\d+$/.test(l.id)
-      );
-      myLists = [...userMade, ...myLists];
-    }
-  } catch {}
-  const all = [...myLists, ...FRIEND_LISTS];
+  // 旧版本迁移:保留用户自建的清单(id 为时间戳后缀)
+  for (const key of LEGACY_LIST_KEYS) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const prev = JSON.parse(raw);
+        const userMade = prev.filter(
+          (l) => l.owner?.id === "me" && /^list_\d+$/.test(l.id)
+        );
+        myLists = [...userMade, ...myLists];
+        break; // 取最近的一个版本即可
+      }
+    } catch {}
+  }
+  const all = [...myLists, ...FRIEND_LISTS, ...REAL_LISTS];
   writeStore(all);
   return all;
 }
