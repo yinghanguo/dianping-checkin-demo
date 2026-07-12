@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { STORE_INFO, FOOD_CHANNEL_STORES, SH_IMG, shPoi } from "../data/shanghaiStores";
-import { getListsContaining, loadLists } from "../data/lists";
+import { getListsContaining, loadLists, categorize } from "../data/lists";
 
 // 美食频道页(对齐真实点评样式)
 // 清单植入两处:①「好友私藏」横滑模块 ②结果卡上的"N 位好友私藏"标识
@@ -33,15 +33,17 @@ export default function FoodChannel() {
   const navigate = useNavigate();
   const [chipActive, setChipActive] = useState(null);
 
-  // 上海的公开好友清单(好友私藏模块)
+  // 上海的公开好友清单(好友私藏模块;美食频道只留吃喝类清单,过滤运动等非美食内容)
   const friendLists = useMemo(
     () =>
-      loadLists().filter(
-        (l) =>
-          l.visibility === "public" &&
-          l.owner?.id !== "me" &&
-          l.items.some((it) => it.poi?.city === "上海")
-      ),
+      loadLists().filter((l) => {
+        if (l.visibility !== "public" || l.owner?.id === "me") return false;
+        if (!l.items.some((it) => it.poi?.city === "上海")) return false;
+        const foodCount = l.items.filter((it) =>
+          ["美食", "咖啡"].includes(categorize(it.poi?.category))
+        ).length;
+        return foodCount >= l.items.length / 2;
+      }),
     []
   );
 
@@ -101,8 +103,8 @@ export default function FoodChannel() {
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-8">
-        {/* ── 图标行 ── */}
-        <div className="bg-white px-3 pb-3 flex items-start justify-between">
+        {/* ── 图标行(pt 给角标气泡留出空间,避免被滚动容器裁剪) ── */}
+        <div className="bg-white px-3 pt-2.5 pb-3 flex items-start justify-between">
           {[
             { icon: "🏆", label: "美食排行" },
             { icon: "🐰", label: "美团外卖" },
@@ -115,7 +117,7 @@ export default function FoodChannel() {
               <div className="text-[26px] leading-none relative">
                 {f.icon}
                 {f.corner && (
-                  <span className="absolute -top-1.5 -right-4 text-[8px] px-1 rounded-full text-white font-bold" style={{ background: "#FF3B30" }}>
+                  <span className="absolute -top-2 -right-3.5 text-[8px] px-1 py-px rounded-full text-white font-bold whitespace-nowrap z-10" style={{ background: "#FF3B30" }}>
                     {f.corner}
                   </span>
                 )}

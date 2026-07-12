@@ -20,7 +20,7 @@ function avatar(name, idx) {
 // 从截图读取的好友列表(按截图顺序,3列从上到下)
 const RAW_FRIENDS = [
   // 第 1 行
-  "奶粉清蒸西瓜籽", "一只美食界的Zoe...", "日酱",
+  "奶粉清蒸西瓜籽", "爱吃能吃的JoJo", "landy_js",
   // 第 2 行
   "JLRu", "chang", "Rouyi",
   // 第 3 行
@@ -28,7 +28,7 @@ const RAW_FRIENDS = [
   // 第 4 行
   "艾伦没有派对", "(模糊)", "Purple43",
   // 第 5 行
-  "朱较瘦", "hardygu", "AT",
+  "朱较瘦", "yzhuo", "AT",
   // 第 6 行
   "Fitz", "Mori", "花花花花花",
   // 第 7 行

@@ -122,23 +122,6 @@ export default function AlbumCreate() {
     });
   };
 
-  // AI 辅助筛选:按当前清单主题(多数类目)圈出候选
-  const handleAiFilter = () => {
-    if (items.length === 0) {
-      showToast("先加一两家店,AI 才知道你的主题");
-      return;
-    }
-    const counts = {};
-    items.forEach((i) => {
-      const b = categorize(i.poi.category);
-      counts[b] = (counts[b] || 0) + 1;
-    });
-    const major = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
-    setCateFilter(major);
-    setCityFilter(null);
-    showToast(`✨ 已按「${major}」主题筛出候选`);
-  };
-
   const handleConfirmSelect = () => {
     const keptItems = items.filter((i) => !i.checkinId || pendingIds.has(i.checkinId));
     const newCheckins = MY_CHECKINS.filter(
@@ -569,39 +552,7 @@ export default function AlbumCreate() {
                 </button>
               </div>
 
-              {/* 类目筛选 + AI 辅助筛选 */}
-              <div className="px-5 py-2 border-b border-[#f5f5f5] shrink-0">
-                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
-                  <button
-                    onClick={handleAiFilter}
-                    className="shrink-0 px-3 h-7 rounded-full text-[12px] font-medium text-white"
-                    style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
-                  >
-                    ✨ AI 按主题筛
-                  </button>
-                  <button
-                    onClick={() => setCateFilter(null)}
-                    className={`shrink-0 px-3 h-7 rounded-full text-[12px] font-medium ${
-                      !cateFilter ? "bg-dpInk text-white" : "bg-[#F5F5F5] text-dpText-secondary"
-                    }`}
-                  >
-                    全部类目
-                  </button>
-                  {cates.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setCateFilter(c === cateFilter ? null : c)}
-                      className={`shrink-0 px-3 h-7 rounded-full text-[12px] font-medium ${
-                        cateFilter === c ? "bg-dpInk text-white" : "bg-[#F5F5F5] text-dpText-secondary"
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 地点筛选 */}
+              {/* 第一行:地点筛选(全部地点 + 按地点分布) */}
               <div className="px-5 py-2 border-b border-[#f5f5f5] shrink-0">
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
                   <button
@@ -621,6 +572,31 @@ export default function AlbumCreate() {
                       }`}
                     >
                       {city}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 第二行:类目筛选 */}
+              <div className="px-5 py-2 border-b border-[#f5f5f5] shrink-0">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+                  <button
+                    onClick={() => setCateFilter(null)}
+                    className={`shrink-0 px-3 h-7 rounded-full text-[12px] font-medium ${
+                      !cateFilter ? "bg-dpInk text-white" : "bg-[#F5F5F5] text-dpText-secondary"
+                    }`}
+                  >
+                    全部类目
+                  </button>
+                  {cates.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCateFilter(c === cateFilter ? null : c)}
+                      className={`shrink-0 px-3 h-7 rounded-full text-[12px] font-medium ${
+                        cateFilter === c ? "bg-dpInk text-white" : "bg-[#F5F5F5] text-dpText-secondary"
+                      }`}
+                    >
+                      {c}
                     </button>
                   ))}
                 </div>

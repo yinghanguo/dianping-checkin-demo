@@ -142,7 +142,7 @@ const FRIEND_HOT_SPOTS = [
     emoji: "⛪",
     bg: "linear-gradient(135deg, #D8E8FF, #B8D5FF)",
     friendIds: ["f6", "f12", "f7", "f11"],
-    note: "@日酱 等 4 位好友打过卡",
+    note: "@landy_js 等 4 位好友打过卡",
   },
   {
     id: "h4",

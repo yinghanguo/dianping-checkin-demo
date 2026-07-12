@@ -7,11 +7,11 @@ const avatar = (name, bg) =>
 
 // ── 创作者 ──
 const TOFU = { id: "f-tofu", name: "再来一碗豆腐汤", avatar: avatar("再来一碗豆腐汤", "fff3d6"), level: "Lv.8" };
-const ZOE = { id: "friend-1", name: "一只美食界的Zoe...", avatar: avatar("一只美食界的Zoe...", "b6e3f4"), level: "Lv.8" };
-const RIJIANG = { id: "friend-2", name: "日酱", avatar: avatar("日酱", "ffdfbf"), level: "Lv.7" };
+const ZOE = { id: "friend-1", name: "爱吃能吃的JoJo", avatar: avatar("爱吃能吃的JoJo", "b6e3f4"), level: "Lv.8" };
+const RIJIANG = { id: "friend-2", name: "landy_js", avatar: avatar("landy_js", "ffdfbf"), level: "Lv.7" };
 const HUAHUA = { id: "friend-17", name: "花花花花花", avatar: avatar("花花花花花", "e0f2f1"), level: "Lv.6" };
 const FITZ = { id: "friend-14", name: "Fitz", avatar: avatar("Fitz", "dcedc8"), level: "Lv.6" };
-const HARDYGU = { id: "friend-12", name: "hardygu", avatar: avatar("hardygu", "b3e5fc"), level: "Lv.7" };
+const HARDYGU = { id: "friend-12", name: "yzhuo", avatar: avatar("yzhuo", "b3e5fc"), level: "Lv.7" };
 const ATT = { id: "friend-13", name: "AT", avatar: avatar("AT", "ffe0b2"), level: "Lv.5" };
 const WENDY = { id: "friend-28", name: "WinWinWendy", avatar: avatar("WinWinWendy", "f8bbd0"), level: "Lv.7" };
 
