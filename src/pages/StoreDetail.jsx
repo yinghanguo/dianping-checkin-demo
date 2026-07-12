@@ -111,7 +111,7 @@ function PhotoCarousel({ photos }) {
   );
 }
 
-const TABS = ["优惠", "推荐菜", "评价"];
+const TABS = ["优惠", "推荐菜", "私藏", "评价"];
 
 export default function StoreDetail() {
   const navigate = useNavigate();
@@ -121,11 +121,12 @@ export default function StoreDetail() {
   const containerRef = useRef(null);
   const dealsRef = useRef(null);
   const dishesRef = useRef(null);
+  const savedRef = useRef(null);
   const reviewsRef = useRef(null);
   const [saveSheetOpen, setSaveSheetOpen] = useState(false);
   const [listTick, setListTick] = useState(0);
 
-  const sectionRefs = [dealsRef, dishesRef, reviewsRef];
+  const sectionRefs = [dealsRef, dishesRef, savedRef, reviewsRef];
   const scrollToSection = (i) => {
     const c = containerRef.current;
     const sec = sectionRefs[i].current;
@@ -322,7 +323,7 @@ export default function StoreDetail() {
               style={{ color: activeTab === i ? "#1a1a1a" : "#999", fontWeight: activeTab === i ? 700 : 500 }}
             >
               {tab}
-              {i === 2 && <span className="ml-0.5 text-[11px] font-normal">({count})</span>}
+              {tab === "评价" && <span className="ml-0.5 text-[11px] font-normal">({count})</span>}
               {activeTab === i && (
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-[#FF6F00]" />
               )}
@@ -425,7 +426,80 @@ export default function StoreDetail() {
             </div>
           </div>
 
-          {/* ══ 楼层三:评价(标签 → 关注的人来过 → 私藏收录 → 评价流) ══ */}
+          {/* ══ 楼层三:私藏(私藏杯角标 + 被 N 份私藏收录,独立成模块) ══ */}
+          <div ref={savedRef} className="pt-5">
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+              </svg>
+              <span className="text-[16px] font-bold text-dpInk">私藏</span>
+              {includedLists.length > 0 && (
+                <span className="text-[12px] font-normal text-dpText-tertiary">被 {includedLists.length} 份收录</span>
+              )}
+            </div>
+
+            {/* 私藏杯角标:打卡即助攻(拔草计分的临门一脚) */}
+            {pkInfo && (
+              <button
+                onClick={() => navigate("/pk")}
+                className="w-full mb-3 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-left"
+                style={{ background: "linear-gradient(120deg, #2B1200, #7A2E00 70%, #C84A00 130%)" }}
+              >
+                <span className="text-[18px] shrink-0">🏆</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12.5px] font-semibold text-white truncate">
+                    这家店在 {pkInfo.count} 份参赛私藏里 · 私藏杯开赛中
+                  </div>
+                  <div className="text-[10.5px] mt-px" style={{ color: "#FFB27A" }}>
+                    收藏清单后来打卡 = 为它助攻「{pkInfo.trackName}」赛道
+                  </div>
+                </div>
+                <span className="shrink-0 text-[11px] text-white/75">看比赛 ›</span>
+              </button>
+            )}
+
+            {/* 被收录模块(清单为门店背书) */}
+            {includedLists.length > 0 ? (
+              <div className="mb-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[13px] text-dpText-secondary">TA 们为什么私藏这家</span>
+                </div>
+                <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+                  {includedLists.slice(0, 3).map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={() => navigate(`/album/${l.id}`, { state: { src: "public" } })}
+                      className="shrink-0 w-[240px] text-left rounded-2xl p-3"
+                      style={{ background: "#FFFAF5", border: "1px solid #FFE8D5" }}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-[#f0f0f0] shrink-0">
+                          <img src={l.owner.avatar} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="text-[11px] text-dpText-secondary truncate flex-1">{l.owner.name}</span>
+                        <span className="text-[10px] text-dpText-tertiary shrink-0">♡ {l.likeCount}</span>
+                      </div>
+                      <div className="text-[13px] font-semibold text-dpInk truncate">{l.title}</div>
+                      {getReasonFor(l, poi.name) && (
+                        <div
+                          className="text-[11.5px] text-dpText-secondary mt-1 leading-snug"
+                          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                        >
+                          “{getReasonFor(l, poi.name)}”
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : !pkInfo ? (
+              <div className="rounded-xl px-3.5 py-4 text-center text-[12px] text-dpText-tertiary" style={{ background: "#FFFAF4" }}>
+                还没有人把这家收进私藏 · <span style={{ color: "#E65000" }}>收入私藏，做第一个</span>
+              </div>
+            ) : null}
+          </div>
+
+          {/* ══ 楼层四:评价(标签 → 关注的人来过 → 评价流) ══ */}
           <div ref={reviewsRef} className="pt-5">
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-[16px] font-bold text-dpInk">
@@ -456,68 +530,6 @@ export default function StoreDetail() {
                 </svg>
               </span>
             </div>
-
-            {/* 私藏杯角标:打卡即助攻(拔草计分的临门一脚) */}
-            {pkInfo && (
-              <button
-                onClick={() => navigate("/pk")}
-                className="w-full mb-3 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-left"
-                style={{ background: "linear-gradient(120deg, #2B1200, #7A2E00 70%, #C84A00 130%)" }}
-              >
-                <span className="text-[18px] shrink-0">🏆</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12.5px] font-semibold text-white truncate">
-                    这家店在 {pkInfo.count} 份参赛私藏里 · 私藏杯开赛中
-                  </div>
-                  <div className="text-[10.5px] mt-px" style={{ color: "#FFB27A" }}>
-                    收藏清单后来打卡 = 为它助攻「{pkInfo.trackName}」赛道
-                  </div>
-                </div>
-                <span className="shrink-0 text-[11px] text-white/75">看比赛 ›</span>
-              </button>
-            )}
-
-            {/* 被收录模块(人格化信任信号 ②:清单为门店背书) */}
-            {includedLists.length > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
-                    </svg>
-                    <span className="text-[13.5px] font-semibold text-dpInk">被 {includedLists.length} 份私藏收录</span>
-                  </div>
-                  <span className="text-[10.5px] text-dpText-tertiary">TA们为什么私藏这家</span>
-                </div>
-                <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
-                  {includedLists.slice(0, 3).map((l) => (
-                    <button
-                      key={l.id}
-                      onClick={() => navigate(`/album/${l.id}`, { state: { src: "public" } })}
-                      className="shrink-0 w-[240px] text-left rounded-2xl p-3"
-                      style={{ background: "#FFFAF5", border: "1px solid #FFE8D5" }}
-                    >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <div className="w-6 h-6 rounded-full overflow-hidden bg-[#f0f0f0] shrink-0">
-                          <img src={l.owner.avatar} alt="" className="w-full h-full object-cover" />
-                        </div>
-                        <span className="text-[11px] text-dpText-secondary truncate flex-1">{l.owner.name}</span>
-                        <span className="text-[10px] text-dpText-tertiary shrink-0">♡ {l.likeCount}</span>
-                      </div>
-                      <div className="text-[13px] font-semibold text-dpInk truncate">{l.title}</div>
-                      {getReasonFor(l, poi.name) && (
-                        <div
-                          className="text-[11.5px] text-dpText-secondary mt-1 leading-snug"
-                          style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
-                        >
-                          “{getReasonFor(l, poi.name)}”
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="space-y-5">
               {/* User's own check-in review */}
