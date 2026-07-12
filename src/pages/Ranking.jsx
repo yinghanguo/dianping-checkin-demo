@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FRIENDS } from "../data/friends";
 import { getProfileForFriend } from "../data/friendProfiles";
 
-// 5月吃货排行榜 — 改成口味档案样式
+// 7月吃货排行榜 — 改成口味档案样式
 // 顶部暖黄头部(Niki 个人卡片) + 下方白 sheet(排行列表)
 export default function Ranking() {
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ export default function Ranking() {
     "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=120&q=70",     // food3
     "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=120&q=70",  // gelato
     "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=120&q=70",     // dessert
-    "https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=120&q=70",  // hotpot
+    "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=120&q=70",  // hotpot
     "https://images.unsplash.com/photo-1559847844-5315695dadae?w=120&q=70",     // seafood
     "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=120&q=70",  // burger
     "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=120&q=70",     // pastry
@@ -100,7 +100,7 @@ export default function Ranking() {
             </svg>
           </button>
           <div className="flex-1 text-center text-[15px] font-semibold text-dpInk pr-5">
-            5月吃货排行榜
+            7月吃货排行榜
           </div>
         </div>
 
@@ -215,7 +215,7 @@ export default function Ranking() {
             >
               <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-[#f5f5f5]">
                 <div className="text-[15px] font-semibold text-dpInk">
-                  {selectedFriend}5月美食记录
+                  {selectedFriend}7月美食记录
                 </div>
                 <button onClick={() => setSelectedFriend(null)}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">

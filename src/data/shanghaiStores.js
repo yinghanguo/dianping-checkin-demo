@@ -169,7 +169,59 @@ export const STORE_INFO = {
     deals: [],
     photos: [SH_IMG.laoshaoxing],
   },
+  // ── 搜索结果页补充门店(对齐真实点评"南京西路"搜索截图) ──
+  "张园": {
+    coords: { lat: 31.2288, lng: 121.4560 },
+    rating: 4.9, reviews: 11939, price: 0,
+    sub: { taste: 4.8, env: 4.9, svc: 4.8 },
+    category: "商场", biz: "南京西路商圈", dist: "677m",
+    badge: "静安区商场好评榜第1名", tags: [],
+    quote: "随手一拍都是杂志封面",
+    hours: "10:00–22:00", address: "静安区 茂名北路泰兴路之间", open: "营业中",
+    deals: [],
+    photos: ["https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=600&q=80"],
+  },
+  "INS LAND新乐园": {
+    coords: { lat: 31.2181, lng: 121.4747 },
+    rating: 4.8, reviews: 3332, price: 0,
+    sub: { taste: 4.6, env: 4.9, svc: 4.7 },
+    category: "商场", biz: "新天地/马当路", dist: "2.1km",
+    badge: "必玩榜 · 2026年上榜玩乐地", tags: [],
+    quote: "夜生活电音地标,一整栋楼都是玩的",
+    hours: "16:00–02:00", address: "黄浦区 淮海中路282号", open: "营业中",
+    deals: [{ type: "团", price: 168, off: "已减678", text: "【周二/三/四/日】通票 @INS 新乐园" }],
+    photos: ["https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600&q=80"],
+  },
+  "豆漿佬(太古汇店)": {
+    coords: { lat: 31.2296, lng: 121.4553 },
+    rating: 4.4, reviews: 980, price: 36,
+    sub: { taste: 4.5, env: 4.3, svc: 4.4 },
+    category: "咖啡", biz: "南京西路商圈", dist: "1.2km",
+    badge: "南京西路商圈咖啡热门榜第6名", tags: ["支持自带杯"],
+    quote: "老板人很好,会赠送一杯特调咖啡",
+    hours: "10:00–20:00", address: "静安区 南京西路1717号", open: "10:00 营业",
+    deals: [
+      { type: "惠", price: 25, off: "7折", text: "【现磨】DirtySet 一组 (午间时段 13:00" },
+      { type: "惠", price: 42, off: "9.4折", text: "【夏日限定】清爽特调咖啡单人餐" },
+    ],
+    photos: ["https://images.unsplash.com/photo-1453614512568-c4024d13c247?w=600&q=80"],
+  },
+  "柚Yuzu锅物酒场·鸡煲·炭烤·宵夜": {
+    coords: { lat: 31.2244, lng: 121.4489 },
+    rating: 4.0, reviews: 528, price: 120,
+    sub: { taste: 4.1, env: 4.2, svc: 4.0 },
+    category: "海鲜火锅", biz: "南京西路商圈", dist: "1.5km",
+    badge: "南京西路商圈火锅热门榜第10名", tags: ["神券", "有露台"],
+    quote: "腊肉煲仔饭裹着烟火气,连锅巴都想扒光",
+    hours: "17:00–02:00", address: "静安区 奉贤路151号", open: "02:00 休息",
+    deals: [
+      { type: "惠", price: 248, off: "5.2折", text: "【京都柚子醉鸡锅】+海鲜拼盘+澳洲" },
+      { type: "惠", price: 9.9, off: "2.7折", text: "一番榨生啤" },
+    ],
+    photos: ["https://images.unsplash.com/photo-1541696490-8744a5dc0228?w=600&q=80"],
+  },
 };
+
 
 // 虚构门店的坐标(梧桐区,清单地图用)
 export const EXTRA_COORDS = {
@@ -197,7 +249,7 @@ export function shPoi(name) {
 }
 
 // 搜索结果页「南京西路」的商户结果(按截图顺序)
-export const NJXL_SEARCH_RESULTS = ["Bco豆库(南京西路店)", "丰盛里", "游牧Bistro小酒馆 by 耶里"];
+export const NJXL_SEARCH_RESULTS = ["Bco豆库(南京西路店)", "丰盛里", "游牧Bistro小酒馆 by 耶里", "张园", "INS LAND新乐园", "豆漿佬(太古汇店)", "柚Yuzu锅物酒场·鸡煲·炭烤·宵夜"];
 
 // 美食频道页的门店列表
 export const FOOD_CHANNEL_STORES = ["贰楼 The Lighthouse-亚洲小馆(丰盛里店)", "神更仔·潮汕魂大排档(汉口路店)", "游牧Bistro小酒馆 by 耶里"];

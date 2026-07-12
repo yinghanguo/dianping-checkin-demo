@@ -19,7 +19,7 @@ const IMG = {
   food3:  "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=120&q=70",
   gelato: "https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=120&q=70",
   dessert:"https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=120&q=70",
-  hotpot: "https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=120&q=70",
+  hotpot: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=120&q=70",
   seafood:"https://images.unsplash.com/photo-1559847844-5315695dadae?w=120&q=70",
   burger: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=120&q=70",
   pastry: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=120&q=70",

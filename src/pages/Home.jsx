@@ -71,7 +71,7 @@ export default function Home() {
               topTab === "following" ? "text-dpInk font-bold" : "text-dpText-secondary"
             }`}
           >
-            关注
+            好友
             {topTab === "following" && (
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-dpOrange rounded-full" />
             )}
