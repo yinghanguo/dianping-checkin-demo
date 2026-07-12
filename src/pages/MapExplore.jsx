@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -44,9 +44,13 @@ export default function MapExplore() {
   const mapRef = useRef(null);
   const markersRef = useRef(null);
   const cardRefs = useRef({});
-  // 三态:layerOn=false 默认态;layerOn=true 私藏态;activeListId 非空 → 清单态
-  const [layerOn, setLayerOn] = useState(false);
-  const [activeListId, setActiveListId] = useState(null);
+  // 三态同步到 URL:从「查看门店」进清单态后跳转清单详情,返回时能恢复门店列表弹窗(不回初始态)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const layerOn = searchParams.get("layer") === "1";
+  const activeListId = searchParams.get("list");
+  const setLayerOn = (on) => setSearchParams(on ? { layer: "1" } : {}, { replace: true });
+  const setActiveListId = (id) =>
+    setSearchParams(id ? { layer: "1", list: id } : { layer: "1" }, { replace: true });
   const [selected, setSelected] = useState(null);
 
   // 热门门店(默认态/私藏态共用)
@@ -395,7 +399,7 @@ export default function MapExplore() {
                     className="shrink-0 px-2.5 h-7 rounded-full text-[11.5px] font-medium flex items-center gap-0.5"
                     style={{ background: "#FFF0E5", color: "#E65000" }}
                   >
-                    上图
+                    查看门店
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
