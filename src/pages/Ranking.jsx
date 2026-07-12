@@ -32,7 +32,7 @@ export default function Ranking() {
     data.push({
       id: "niki",
       name: "Niki",
-      avatar: {nikiAvatar},
+      avatar: nikiAvatar,
       count: 14,
       isMe: true,
     });
@@ -94,7 +94,7 @@ export default function Ranking() {
       >
         {/* 标题 */}
         <div className="px-4 flex items-center gap-3 mb-3">
-          <button onClick={() => navigate(-1)} className="shrink-0">
+          <button onClick={() => navigate("/?tab=following")} className="shrink-0">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5">
               <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

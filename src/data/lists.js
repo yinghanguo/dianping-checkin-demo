@@ -687,6 +687,19 @@ const COFFEE_DRAFT_STORES = [
   },
 ];
 
+// 理由收敛到"两句话/≤50字":自己发布过的原文太长,只带前两小句
+function twoSentences(t = "") {
+  const parts = t.split(/(?<=[。;;!！?？])/).filter(Boolean);
+  let out = "";
+  for (const p of parts) {
+    if ((out + p).length > 50) break;
+    out += p;
+    if (out.split(/[。;;!！?？]/).filter(Boolean).length >= 2) break;
+  }
+  out = (out || t).replace(/[。;;]$/, "");
+  return out.length > 50 ? out.slice(0, 50) : out;
+}
+
 export function buildCoffeeDraft() {
   // AI 只做选店筛选,不代写:标题留白由用户自己起,只给一个可一键填入的建议;理由带入用户自己发布过的原文
   return {
@@ -694,13 +707,16 @@ export function buildCoffeeDraft() {
     suggestedTitle: "四处喝了一年的咖啡私藏",
     description: "",
     category: "咖啡",
-    items: COFFEE_DRAFT_STORES.map((s) => ({
-      checkinId: null,
-      poi: s.poi,
-      allPhotos: s.allPhotos || s.photos,
-      photos: s.photos,
-      text: s.text,
-    })),
+    items: COFFEE_DRAFT_STORES.map((s) => {
+      const all = s.allPhotos || s.photos;
+      return {
+        checkinId: null,
+        poi: s.poi,
+        allPhotos: all,
+        photos: all, // 自己发布过的内容:全部照片直接代入,无需手动点击添加
+        text: twoSentences(s.text),
+      };
+    }),
   };
 }
 
@@ -736,8 +752,8 @@ export function buildDraftBox() {
           checkinId: c.id,
           poi: c.poi,
           allPhotos: c.photos,
-          photos: [c.photos[0]],
-          text: (c.text || "").slice(0, 60),
+          photos: c.photos, // 全部照片直接代入
+          text: twoSentences(c.text || ""),
         })),
       });
     });

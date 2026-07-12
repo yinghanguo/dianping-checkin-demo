@@ -26,7 +26,6 @@ export default function AlbumCreate() {
   const [cityFilter, setCityFilter] = useState(null);
   const [cateFilter, setCateFilter] = useState(null);
   const [pendingIds, setPendingIds] = useState(new Set());
-  const [toast, setToast] = useState(null);
   const [publishIssue, setPublishIssue] = useState(null); // 发布不达标弹窗
   const [suggestedTitle, setSuggestedTitle] = useState(""); // 草稿携带的主题建议,一键填入
   const [pkTag, setPkTag] = useState(null); // 参赛灵感标签 { group, name }
@@ -34,11 +33,6 @@ export default function AlbumCreate() {
 
   // 参赛标签推荐(按清单内容给商圈/主题灵感)
   const pkRec = useMemo(() => recommendPkTags(items), [items]);
-
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2400);
-  };
 
   // AI 选店草稿预填(仅店集合;理由带入用户自己发布过的原文)
   useEffect(() => {
@@ -237,14 +231,26 @@ export default function AlbumCreate() {
             className="w-full text-[15px] text-dpInk placeholder-[#bbb] outline-none bg-transparent"
           />
           {suggestedTitle && !title.trim() && (
-            <button
-              onClick={() => setTitle(suggestedTitle)}
-              className="mt-2 flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[12px]"
-              style={{ background: "#FFF3E5", color: "#E65000" }}
-            >
-              <span>「{suggestedTitle}」</span>
-              <span className="font-medium">一键填入</span>
-            </button>
+            <div className="mt-2.5 flex items-center gap-2">
+              <span className="text-[10.5px] text-dpText-tertiary shrink-0">推荐</span>
+              {/* 推荐名(浅底 chip) 与 一键填入(实心按钮) 视觉分离 */}
+              <span
+                className="min-w-0 truncate px-2.5 h-7 rounded-lg text-[12.5px] flex items-center"
+                style={{ background: "#FFF3E5", color: "#B45309", border: "1px dashed #FFC98A" }}
+              >
+                {suggestedTitle}
+              </span>
+              <button
+                onClick={() => setTitle(suggestedTitle)}
+                className="shrink-0 px-3 h-7 rounded-lg text-[12px] font-medium text-white flex items-center gap-1"
+                style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                一键填入
+              </button>
+            </div>
           )}
         </div>
 
@@ -387,19 +393,6 @@ export default function AlbumCreate() {
         <div className="h-6" />
       </div>
 
-      {/* Toast */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
-            className="absolute bottom-16 left-1/2 -translate-x-1/2 whitespace-nowrap px-4 py-2 rounded-full text-white text-[13px] z-[105]"
-            style={{ background: "rgba(0,0,0,0.75)" }}
-          >
-            {toast}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* ── 参赛灵感标签选择 Sheet ── */}
       <AnimatePresence>
         {tagSheet && (
@@ -422,7 +415,7 @@ export default function AlbumCreate() {
                 <div className="text-[16px] font-semibold text-dpInk">挑一个灵感标签</div>
                 <div className="text-[11px] text-dpText-tertiary mt-0.5">商圈或主题任选一个,挂在清单上进比赛</div>
               </div>
-              <div className="flex-1 overflow-y-auto no-scrollbar px-5 pb-6">
+              <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 pb-8">
                 <div className="flex items-center gap-1.5 mt-2 mb-2">
                   <span className="px-1.5 h-[18px] rounded text-[10px] font-medium flex items-center" style={{ background: "#FFF0E5", color: "#E65000" }}>主题</span>
                   <span className="text-[10px] text-dpText-tertiary">你最懂的那个场景</span>
@@ -603,7 +596,7 @@ export default function AlbumCreate() {
               </div>
 
               {/* Checkin list */}
-              <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-1">
+              <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 py-1">
                 {filteredCheckins.length === 0 && (
                   <div className="text-center text-[12px] text-dpText-tertiary py-10">
                     这个筛选下没有发布记录
@@ -701,12 +694,17 @@ function ItemCard({ item, index, onUpdate, onRemove }) {
         <div className="text-[11px] text-dpText-tertiary mb-1.5">
           照片{photos.length > 0 ? `（${photos.length} 张,首图为封面）` : "（至少一张）"}
         </div>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pt-2 pb-1 px-0.5">
           {photos.map((p, i) => (
             <div key={p} className="relative shrink-0">
+              {/* 封面用 inset 边框(border-box),不外扩、不被横滑容器裁剪 */}
               <div
-                className={`rounded-xl overflow-hidden ${i === 0 ? "ring-2 ring-dpOrange ring-offset-1" : ""}`}
-                style={{ width: 72, height: 72 }}
+                className="rounded-xl overflow-hidden"
+                style={{
+                  width: 72, height: 72,
+                  border: i === 0 ? "2px solid #FF6F00" : "1px solid #eee",
+                  boxSizing: "border-box",
+                }}
               >
                 <img src={p} alt="" className="w-full h-full object-cover" />
               </div>
@@ -775,11 +773,13 @@ function ItemCard({ item, index, onUpdate, onRemove }) {
         </div>
         <textarea
           value={item.text}
-          onChange={(e) => onUpdate({ text: e.target.value })}
+          onChange={(e) => onUpdate({ text: e.target.value.slice(0, 50) })}
           placeholder="为什么是这家？一句话就够"
-          className="w-full bg-[#F8F8F8] rounded-xl px-3 py-2.5 text-[13px] text-dpInk resize-none outline-none placeholder-[#bbb] leading-relaxed"
+          maxLength={50}
+          className="w-full bg-[#F8F8F8] rounded-xl px-3 py-2 text-[13px] text-dpInk resize-none outline-none placeholder-[#bbb] leading-relaxed"
           rows={2}
         />
+        <div className="text-right text-[9.5px] text-dpText-tertiary mt-1">{(item.text || "").length}/50</div>
       </div>
     </motion.div>
   );

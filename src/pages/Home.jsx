@@ -4,14 +4,17 @@ import { motion } from "framer-motion";
 import Following from "./Following";
 import { getList, loadLists } from "../data/lists";
 import { STORE_INFO, SH_IMG, shPoi } from "../data/shanghaiStores";
+import { FRIEND_STORIES } from "../data/friendFeed";
 
 // 大众点评首页(对齐真实样式):顶部 Tab、搜索条、分类宫格、点评榜单/免费试双卡、双列瀑布流
 // 清单植入:信息流清单卡片(四宫格封面+人格化头像前置)
 export default function Home() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") === "following" ? "following" : "city";
-  const [topTab, setTopTab] = useState(initialTab);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // topTab 同步到 URL:让从「好友/附近」进入的清单/排行榜返回时能回到对应 Tab(而非首页)
+  const urlTab = searchParams.get("tab");
+  const topTab = urlTab === "following" || urlTab === "nearby" ? urlTab : "city";
+  const setTopTab = (t) => setSearchParams(t === "city" ? {} : { tab: t }, { replace: true });
 
   const categories = [
     { icon: "🍗", label: "美食", to: "/food" },
@@ -72,6 +75,10 @@ export default function Home() {
             }`}
           >
             好友
+            {/* 好友有更新时的红点提示 */}
+            {topTab !== "following" && FRIEND_STORIES.some((s) => s.unread) && (
+              <span className="absolute -top-0.5 -right-1.5 w-1.5 h-1.5 rounded-full bg-[#FF3B30]" />
+            )}
             {topTab === "following" && (
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-dpOrange rounded-full" />
             )}
@@ -501,12 +508,7 @@ function NearbyTab({ navigate }) {
           <div key={col} className="space-y-2">
             {cells.filter((_, i) => i % 2 === col).map((cell, i) =>
               cell.type === "list" ? (
-                <div key={`l${i}`} className="relative">
-                  <ListFeedCard navigate={navigate} list={cell.data} />
-                  <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[9px] text-white" style={{ background: "rgba(0,0,0,0.5)" }}>
-                    离你 {cell.dist}
-                  </div>
-                </div>
+                <NearbyListCard key={`l${i}`} list={cell.data} dist={cell.dist} navigate={navigate} />
               ) : (
                 <NearbyNoteCard key={`n${i}`} note={cell.data} />
               )
@@ -515,6 +517,51 @@ function NearbyTab({ navigate }) {
         ))}
       </div>
     </div>
+  );
+}
+
+// 附近的清单卡(紧凑版:封面 4/3 比笔记的 3/4 更矮,整体与内容卡尺寸相当) ──
+function NearbyListCard({ list, dist, navigate }) {
+  const photos = list.items.map((it) => it.photo).slice(0, 4);
+  return (
+    <button
+      onClick={() => navigate(`/album/${list.id}`, { state: { src: "public" } })}
+      className="w-full bg-white rounded-xl overflow-hidden text-left relative"
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)", border: "1px solid #FFE0C7" }}
+    >
+      <div className="relative w-full" style={{ aspectRatio: "4/3" }}>
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-white">
+          {[0, 1, 2, 3].map((k) => (
+            <div key={k} className="bg-[#f0f0f0] overflow-hidden">
+              {photos[k % photos.length] && (
+                <img src={photos[k % photos.length]} alt="" className="w-full h-full object-cover" loading="lazy" />
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-[9px] text-white font-medium flex items-center gap-0.5" style={{ background: "rgba(255,111,0,0.9)" }}>
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+          </svg>
+          私藏清单
+        </div>
+        <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md text-[9px] text-white" style={{ background: "rgba(0,0,0,0.5)" }}>
+          离你 {dist}
+        </div>
+      </div>
+      <div className="px-2 py-2">
+        <div className="text-[13px] font-medium text-dpInk leading-snug truncate">{list.title}</div>
+        <div className="flex items-center justify-between mt-1.5 text-[11px] text-dpText-tertiary">
+          <div className="flex items-center gap-1 min-w-0">
+            <div className="w-4 h-4 rounded-full overflow-hidden bg-[#f0f0f0] shrink-0">
+              <img src={list.owner.avatar} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="truncate">{list.owner.name}</span>
+          </div>
+          <span className="shrink-0">🔖 {list.saveCount}</span>
+        </div>
+      </div>
+    </button>
   );
 }
 

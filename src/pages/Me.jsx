@@ -193,42 +193,34 @@ export default function Me() {
           />
         </div>
 
-        {/* ── banner 轮播:活动促稿(默认第一张) + 草稿推荐(来自草稿箱);两张都有 ✕,按钮沉底不与 ✕ 重叠 ── */}
+        {/* ── banner 轮播:活动促稿(默认第一张) + 草稿推荐(来自草稿箱);整框可点,✕ 独立在框右上角 ── */}
         <BannerCarousel
           slides={[
             ...(!pkDismissed
               ? [
                   <div
                     key="pk"
-                    className="rounded-2xl pl-4 pr-3 py-2.5 relative overflow-hidden h-full"
+                    onClick={() => navigate("/pk?phase=submit")}
+                    className="rounded-2xl pl-4 pr-9 py-3 relative overflow-hidden h-full cursor-pointer"
                     style={{ background: "linear-gradient(120deg, #2B1200 0%, #7A2E00 60%, #E65000 140%)" }}
                   >
                     <div className="absolute -right-3 -bottom-4 text-[48px] opacity-20 rotate-12 select-none">🏆</div>
                     <button
-                      onClick={dismissPk}
-                      className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center z-10"
+                      onClick={(e) => { e.stopPropagation(); dismissPk(); }}
+                      className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center z-10"
                       style={{ background: "rgba(255,255,255,0.25)" }}
+                      aria-label="关闭"
                     >
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
                         <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
                       </svg>
                     </button>
-                    <div className="flex items-end gap-3">
-                      <button onClick={() => navigate("/pk?phase=submit")} className="flex-1 min-w-0 text-left">
-                        <div className="text-[13px] font-semibold text-white leading-snug pr-5">
-                          私藏杯 · 上海站提报中
-                        </div>
-                        <div className="text-[11px] mt-0.5" style={{ color: "#FFB27A" }}>
-                          把私藏拿出来比一比 · 大奖:Asia's 50 香港之旅
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => navigate("/pk?phase=submit")}
-                        className="shrink-0 px-3 h-7 rounded-full text-[12px] text-white font-medium mb-0.5"
-                        style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.35)" }}
-                      >
-                        去报名
-                      </button>
+                    <div className="text-[13px] font-semibold text-white leading-snug">
+                      私藏杯 · 上海站提报中
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: "#FFB27A" }}>
+                      把私藏拿出来比一比 · 大奖:Asia's 50 香港之旅
+                      <span className="text-white font-medium ml-1">去报名 ›</span>
                     </div>
                   </div>,
                 ]
@@ -237,37 +229,29 @@ export default function Me() {
               ? [
                   <div
                     key="draft"
-                    className="rounded-2xl pl-4 pr-3 py-2.5 relative h-full"
+                    onClick={() => handleDraft()}
+                    className="rounded-2xl pl-4 pr-9 py-3 relative h-full cursor-pointer"
                     style={{
                       background: "linear-gradient(135deg, #FFF3E0, #FFE5C2)",
                       border: "1px solid rgba(255,111,0,0.18)",
                     }}
                   >
                     <button
-                      onClick={dismissDraft}
-                      className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/90 flex items-center justify-center z-10"
+                      onClick={(e) => { e.stopPropagation(); dismissDraft(); }}
+                      className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white/90 flex items-center justify-center z-10"
                       style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.12)" }}
+                      aria-label="关闭"
                     >
-                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="3">
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="3">
                         <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
                       </svg>
                     </button>
-                    <div className="flex items-end gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-semibold text-dpInk leading-snug pr-5">
-                          最近打卡了 {coffeeDraft.items.length} 家咖啡店
-                        </div>
-                        <div className="text-[11px] text-dpText-secondary mt-0.5">
-                          草稿箱已按类目整理好,顺手发一份私藏清单？
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDraft()}
-                        className="shrink-0 px-3 h-7 rounded-full text-[12px] text-white font-medium mb-0.5"
-                        style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
-                      >
-                        查看草稿
-                      </button>
+                    <div className="text-[13px] font-semibold text-dpInk leading-snug">
+                      最近打卡了 {coffeeDraft.items.length} 家咖啡店
+                    </div>
+                    <div className="text-[11px] text-dpText-secondary mt-0.5">
+                      草稿箱已按类目整理好
+                      <span className="text-dpOrange-deep font-medium ml-1">查看草稿 ›</span>
                     </div>
                   </div>,
                 ]
