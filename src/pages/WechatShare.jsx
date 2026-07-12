@@ -1,7 +1,8 @@
+import nikiAvatar from "../assets/niki-avatar.svg";
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { getList, beenThereStats } from "../data/lists";
+import { getList } from "../data/lists";
 
 // 微信分享落地演示(方案 5.7):清单以小程序卡片的形态出现在聊天里
 // 对齐真实门店分享卡样式,点击卡片 → 清单只读落地页(demo 中直接进清单详情)
@@ -10,7 +11,6 @@ export default function WechatShare() {
   const { id } = useParams();
   const list = getList(id) || getList("list_f_njxl_richang");
   if (!list) return null;
-  const stats = beenThereStats(list);
   const photos = list.items.map((it) => it.photo).slice(0, 4);
 
   return (
@@ -65,7 +65,7 @@ export default function WechatShare() {
               </div>
               {/* 信任标 */}
               <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] text-white flex items-center gap-0.5" style={{ background: "rgba(0,0,0,0.55)" }}>
-                {stats.all ? `✓ ${list.items.length} 家全部去过` : `${list.items.length} 家店`}
+                {`${list.items.length} 家店`}
               </div>
               <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] text-white flex items-center gap-1" style={{ background: "rgba(0,0,0,0.55)" }}>
                 <div className="w-3 h-3 rounded-full overflow-hidden">
@@ -85,7 +85,7 @@ export default function WechatShare() {
           </motion.button>
           {/* Niki 头像 */}
           <div className="w-9 h-9 rounded-md overflow-hidden shrink-0 bg-white">
-            <img src="https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc" alt="" className="w-full h-full" />
+            <img src={nikiAvatar} alt="" className="w-full h-full" />
           </div>
         </div>
 

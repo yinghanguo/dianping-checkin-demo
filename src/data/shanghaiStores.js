@@ -178,9 +178,10 @@ export const EXTRA_COORDS = {
   "永康路咖啡角": { lat: 31.209, lng: 121.453 },
 };
 
-// 统一取坐标:真实档案 → 虚构补充
+// 统一取坐标:真实档案 → 虚构补充 → 真实清单门店
+import { REAL_COORDS } from "./realLists";
 export function getStoreCoords(name) {
-  return STORE_INFO[name]?.coords || EXTRA_COORDS[name] || null;
+  return STORE_INFO[name]?.coords || EXTRA_COORDS[name] || REAL_COORDS[name] || null;
 }
 
 // 便捷构造 poi 对象

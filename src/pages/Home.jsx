@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import Following from "./Following";
-import { getList, beenThereStats } from "../data/lists";
+import { getList } from "../data/lists";
 import { STORE_INFO, SH_IMG, shPoi } from "../data/shanghaiStores";
 
 // 大众点评首页(对齐真实样式):顶部 Tab、搜索条、分类宫格、点评榜单/免费试双卡、双列瀑布流
@@ -147,10 +147,29 @@ export default function Home() {
           ))}
         </div>
 
+        {/* ── 中通 banner:私藏杯活动主入口(开赛周/决胜周两波强投) ── */}
+        <button
+          onClick={() => navigate("/pk")}
+          className="mx-2.5 mb-3 rounded-2xl px-4 py-3 flex items-center gap-3 text-left relative overflow-hidden"
+          style={{ background: "linear-gradient(120deg, #2B1200 0%, #7A2E00 60%, #E65000 140%)", width: "calc(100% - 20px)" }}
+        >
+          <div className="absolute -right-4 -bottom-5 text-[56px] opacity-20 rotate-12 select-none">🏆</div>
+          <div className="shrink-0 px-1.5 h-5 rounded flex items-center text-[10px] font-bold text-white" style={{ background: "#FF6F00" }}>
+            开赛中
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[14px] font-bold text-white">私藏杯 · 上海站</div>
+            <div className="text-[10.5px] mt-0.5" style={{ color: "#FFB27A" }}>
+              收藏是心动，打卡才是真爱 · 冠军由真实打卡决出
+            </div>
+          </div>
+          <span className="shrink-0 text-[11px] text-white/80">去围观 ›</span>
+        </button>
+
         {/* ── 点评榜单 / 免费试 双卡 ── */}
         <div className="px-2.5 mb-3 grid grid-cols-2 gap-2">
           <button
-            onClick={() => navigate("/store", { state: { poi: shPoi("SOSO盐面包"), photo: SH_IMG.soso } })}
+            onClick={() => navigate("/rankboard")}
             className="rounded-2xl p-3 text-left"
             style={{ background: "linear-gradient(135deg, #FFF8E8, #FFF2D8)" }}
           >
@@ -172,7 +191,7 @@ export default function Home() {
             </div>
           </button>
           <button
-            onClick={() => navigate("/store", { state: { poi: shPoi("神更仔·潮汕魂大排档(汉口路店)"), photo: SH_IMG.shengengzai } })}
+            onClick={() => navigate("/free-trial")}
             className="rounded-2xl p-3 text-left"
             style={{ background: "linear-gradient(135deg, #FFF0F5, #FFE5F0)" }}
           >
@@ -328,11 +347,10 @@ function FeedCard({ feed, onClick }) {
 function ListFeedCard({ navigate }) {
   const list = getList("list_f_njxl_richang");
   if (!list) return null;
-  const stats = beenThereStats(list);
   const photos = list.items.map((it) => it.photo).slice(0, 4);
   return (
     <button
-      onClick={() => navigate(`/album/${list.id}`)}
+      onClick={() => navigate(`/album/${list.id}`, { state: { src: "public" } })}
       className="bg-white rounded-xl overflow-hidden text-left"
       style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)", border: "1px solid #FFE0C7" }}
     >
@@ -355,14 +373,12 @@ function ListFeedCard({ navigate }) {
           </svg>
           私藏清单
         </div>
-        {stats.all && (
-          <div
-            className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] text-white"
-            style={{ background: "rgba(46,125,50,0.85)" }}
-          >
-            ✓ 作者全部去过 {list.items.length} 家
-          </div>
-        )}
+        <div
+          className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] text-white"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+        >
+          {list.items.length} 家店
+        </div>
       </div>
       <div className="px-2 py-2">
         <div

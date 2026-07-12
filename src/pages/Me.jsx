@@ -1,3 +1,4 @@
+import nikiAvatar from "../assets/niki-avatar.svg";
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -9,7 +10,6 @@ import {
   getSavedLists,
   effectiveCheckedOff,
   buildCoffeeDraft,
-  countCoffeeCheckins,
 } from "../data/lists";
 
 // 「我的」页 — 高度还原点评原生设计
@@ -38,11 +38,11 @@ export default function Me() {
 
   const myLists = useMemo(() => getMyLists(), [photoTab]);
   const savedLists = useMemo(() => getSavedLists(), [photoTab]);
-  const coffeeCount = useMemo(() => countCoffeeCheckins(), []);
+  const coffeeDraft = useMemo(() => buildCoffeeDraft(), []);
   const totalListSaves = myLists.reduce((s, l) => s + (l.saveCount || 0), 0);
 
   const handleDraft = () => {
-    navigate("/album/create", { state: { draft: buildCoffeeDraft() } });
+    navigate("/album/create", { state: { draft: coffeeDraft } });
   };
   const dismissDraft = () => {
     sessionStorage.setItem("dp_draft_dismissed", "1");
@@ -83,7 +83,7 @@ export default function Me() {
                 style={{ boxShadow: "0 4px 14px rgba(0,0,0,0.1)" }}
               >
                 <img
-                  src="https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc"
+                  src={nikiAvatar}
                   alt=""
                   className="w-full h-full"
                 />
@@ -184,45 +184,70 @@ export default function Me() {
           />
         </div>
 
-        {/* ── AI 存量转化气泡:创作零成本的入口 ── */}
-        {!draftDismissed && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mx-3 mt-2 rounded-2xl px-4 py-3 flex items-center gap-3 relative"
-            style={{
-              background: "linear-gradient(135deg, #FFF3E0, #FFE5C2)",
-              border: "1px solid rgba(255,111,0,0.18)",
-            }}
-          >
-            <div className="text-[26px] shrink-0">☕</div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold text-dpInk leading-snug">
-                你打过卡的咖啡店已有 {coffeeCount} 家
-              </div>
-              <div className="text-[11px] text-dpText-secondary mt-0.5">
-                AI 帮你整理成一份私藏清单，理由摘自你写过的话
-              </div>
-            </div>
+        {/* ── banner 轮播:草稿引导 + 私藏杯报名(横滑 + 2 秒自动轮播) ── */}
+        <BannerCarousel
+          slides={[
+            ...(!draftDismissed && coffeeDraft.items.length >= 3
+              ? [
+                  <div
+                    key="draft"
+                    className="rounded-2xl px-4 py-3 flex items-center gap-3 relative h-full"
+                    style={{
+                      background: "linear-gradient(135deg, #FFF3E0, #FFE5C2)",
+                      border: "1px solid rgba(255,111,0,0.18)",
+                    }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold text-dpInk leading-snug">
+                        最近打卡了 {coffeeDraft.items.length} 家咖啡店
+                      </div>
+                      <div className="text-[11px] text-dpText-secondary mt-0.5">
+                        顺手整理成一份私藏清单？
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleDraft}
+                      className="shrink-0 px-3 h-8 rounded-full text-[12px] text-white font-medium"
+                      style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+                    >
+                      查看草稿
+                    </button>
+                    <button
+                      onClick={dismissDraft}
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/80 flex items-center justify-center"
+                      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.12)" }}
+                    >
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="3">
+                        <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>,
+                ]
+              : []),
             <button
-              onClick={handleDraft}
-              className="shrink-0 px-3 h-8 rounded-full text-[12px] text-white font-medium"
-              style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+              key="pk"
+              onClick={() => navigate("/pk?phase=submit")}
+              className="w-full rounded-2xl px-4 py-3 flex items-center gap-3 text-left relative overflow-hidden h-full"
+              style={{ background: "linear-gradient(120deg, #2B1200 0%, #7A2E00 60%, #E65000 140%)" }}
             >
-              ✨ 生成草稿
-            </button>
-            <button
-              onClick={dismissDraft}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white flex items-center justify-center"
-              style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.12)" }}
-            >
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="3">
-                <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
-              </svg>
-            </button>
-          </motion.div>
-        )}
+              <div className="absolute -right-3 -bottom-4 text-[48px] opacity-20 rotate-12 select-none">🏆</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-white leading-snug">
+                  私藏杯 · 上海站提报中
+                </div>
+                <div className="text-[11px] mt-0.5" style={{ color: "#FFB27A" }}>
+                  把私藏拿出来比一比 · 大奖:Asia's 50 香港之旅
+                </div>
+              </div>
+              <span
+                className="shrink-0 px-3 h-8 rounded-full text-[12px] text-white font-medium flex items-center"
+                style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.35)" }}
+              >
+                去报名
+              </span>
+            </button>,
+          ]}
+        />
 
         {/* ── 功能宫格 ── */}
         <div className="mx-3 mt-2 bg-white rounded-2xl px-3 py-3.5"
@@ -594,5 +619,71 @@ export function BottomTab({ navigate, active = "home" }) {
         </button>
       </div>
     </div>
+  );
+}
+
+// ── banner 轮播:横滑 + 每 2 秒自动轮播(私藏杯活动位与草稿引导共用 banner 位) ──
+function BannerCarousel({ slides }) {
+  const scroller = React.useRef(null);
+  const [idx, setIdx] = useState(0);
+  const count = slides.length;
+
+  React.useEffect(() => {
+    if (count <= 1) return;
+    const timer = setInterval(() => {
+      setIdx((prev) => {
+        const next = (prev + 1) % count;
+        const el = scroller.current;
+        if (el) el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
+        return next;
+      });
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [count]);
+
+  if (count === 0) return null;
+
+  const handleScroll = () => {
+    const el = scroller.current;
+    if (!el) return;
+    const cur = Math.round(el.scrollLeft / el.clientWidth);
+    if (cur !== idx) setIdx(cur);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="mx-3 mt-2 relative"
+    >
+      <div
+        ref={scroller}
+        onScroll={handleScroll}
+        className="flex overflow-x-auto no-scrollbar"
+        style={{ scrollSnapType: "x mandatory" }}
+      >
+        {slides.map((s, i) => (
+          <div key={i} className="w-full shrink-0" style={{ scrollSnapAlign: "center" }}>
+            {s}
+          </div>
+        ))}
+      </div>
+      {count > 1 && (
+        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1">
+          {slides.map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all"
+              style={{
+                width: i === idx ? 10 : 4,
+                height: 4,
+                background: i === idx ? "#FF6F00" : "#ddd",
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </motion.div>
   );
 }

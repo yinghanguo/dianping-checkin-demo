@@ -3,16 +3,21 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FRIENDS } from "../data/friends";
 import { getProfileForFriend } from "../data/friendProfiles";
-import { getPublicListsOf, beenThereStats } from "../data/lists";
+import { getPublicListsOf } from "../data/lists";
 
 // 客态个人主页 — 与主态(Me 页)差异化:
 //   主态强调资产沉淀(去过哪、发过什么);客态强调"给别人看的东西"——
 //   完整头部(等级/粉丝关注获赞)+ 内容,且默认锚定在「私藏」Tab(公开清单是品味门面)
 const PERSONA = {
-  "日酱": "在南西上班第四年，咖啡因和 tapas 成瘾",
-  "一只美食界的Zoe...": "请客选店担当，只推荐自己回头过三次的店",
+  "日酱": "在南西上班第四年，咖啡因和居酒屋成瘾",
+  "一只美食界的Zoe...": "请客选店担当，你永远可以相信粤菜和啫啫煲",
   "坏蛋bobo": "十点后下班，专修深夜食堂",
-  "花花花花花": "梧桐区暗访员，安静吃饭爱好者",
+  "花花花花花": "梧桐区暗访员，回不去云南的日子靠这几家救命",
+  "再来一碗豆腐汤": "又四处喝了一年咖啡，理由都摘自我当时写下的话",
+  "Fitz": "跟着王教练从静安打到杨浦又打到徐汇，现在开始学发球了",
+  "WinWinWendy": "旅行时只信吃货，不信榜单",
+  "hardygu": "至臻老会员，充5000打8折很划算，每周都来",
+  "AT": "打球是次要的，拍出来好看才是正经事(不是)",
 };
 
 export default function FriendProfile() {
@@ -182,7 +187,6 @@ export default function FriendProfile() {
               ) : (
                 <div className="grid grid-cols-2 gap-2.5">
                   {friendLists.map((l, idx) => {
-                    const stats = beenThereStats(l);
                     return (
                       <motion.button
                         key={l.id}
@@ -195,14 +199,6 @@ export default function FriendProfile() {
                       >
                         <div className="relative w-full bg-[#f0f0f0]" style={{ aspectRatio: "4/3" }}>
                           <img src={l.cover} alt="" className="w-full h-full object-cover" loading="lazy" />
-                          {stats.all && (
-                            <div
-                              className="absolute bottom-1.5 left-1.5 px-1.5 py-px rounded text-[9px] text-white font-medium"
-                              style={{ background: "rgba(46,125,50,0.85)" }}
-                            >
-                              ✓ 作者全部去过
-                            </div>
-                          )}
                         </div>
                         <div className="px-2.5 py-2">
                           <div
@@ -274,12 +270,7 @@ export default function FriendProfile() {
                     <img src={it.photo} alt="" className="w-full h-full object-cover" loading="lazy" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[14px] font-semibold text-dpInk truncate">{it.poi?.name}</span>
-                      <span className="shrink-0 text-[9px] px-1 py-px rounded" style={{ background: "#EAF5E2", color: "#2E7D32" }}>
-                        去过 ✓
-                      </span>
-                    </div>
+                    <div className="text-[14px] font-semibold text-dpInk truncate">{it.poi?.name}</div>
                     <p className="text-[12.5px] text-dpInk leading-relaxed mt-1">“{it.reason}”</p>
                     <div className="text-[10.5px] mt-1" style={{ color: "#B08850" }}>
                       收录于「{it.fromList}」

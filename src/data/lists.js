@@ -4,16 +4,18 @@
 //   - 新增互动(点赞/收藏/订阅)与拔草(checkOff)，存在独立的 meta 存储里
 import { MY_CHECKINS } from "./myCheckins";
 import { SH_IMG, shPoi } from "./shanghaiStores";
+import { REAL_LISTS } from "./realLists";
+import nikiAvatar from "../assets/niki-avatar.svg";
 
-const STORAGE_KEY = "dp_lists_v2"; // v2:加入上海南京西路清单数据
+const STORAGE_KEY = "dp_lists_v6"; // v6:网球拆为三位创作者三份清单(支撑同主题推荐)
 const META_KEY = "dp_list_meta_v1";
 const LEGACY_ALBUM_KEY = "dp_albums";
-const LEGACY_LIST_KEY = "dp_lists_v1";
+const LEGACY_LIST_KEYS = ["dp_lists_v5", "dp_lists_v4", "dp_lists_v3", "dp_lists_v2", "dp_lists_v1"];
 
 export const ME = {
   id: "me",
   name: "Niki",
-  avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc",
+  avatar: nikiAvatar,
   level: "Lv.8",
 };
 
@@ -287,7 +289,7 @@ const FRIEND_LISTS = [
       },
       {
         poi: { name: "Nomad Coffee Lab", city: "巴塞罗那", category: "咖啡厅", emoji: "☕" },
-        photo: "https://images.unsplash.com/photo-1572286258217-215ceb3ce0e3?w=600&q=80",
+        photo: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&q=80",
         reason: "本地烘焙天花板，手冲只用自家豆子，闭眼点",
         beenThere: true,
       },
@@ -441,18 +443,21 @@ function seed() {
       myLists = [...extras, ...MY_INITIAL_LISTS];
     }
   } catch {}
-  // v1 → v2 迁移:保留用户在 v1 里自建的清单(id 为时间戳后缀)
-  try {
-    const v1 = localStorage.getItem(LEGACY_LIST_KEY);
-    if (v1) {
-      const prev = JSON.parse(v1);
-      const userMade = prev.filter(
-        (l) => l.owner?.id === "me" && /^list_\d+$/.test(l.id)
-      );
-      myLists = [...userMade, ...myLists];
-    }
-  } catch {}
-  const all = [...myLists, ...FRIEND_LISTS];
+  // 旧版本迁移:保留用户自建的清单(id 为时间戳后缀)
+  for (const key of LEGACY_LIST_KEYS) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const prev = JSON.parse(raw);
+        const userMade = prev.filter(
+          (l) => l.owner?.id === "me" && /^list_\d+$/.test(l.id)
+        );
+        myLists = [...userMade, ...myLists];
+        break; // 取最近的一个版本即可
+      }
+    } catch {}
+  }
+  const all = [...myLists, ...FRIEND_LISTS, ...REAL_LISTS];
   writeStore(all);
   return all;
 }
@@ -576,28 +581,124 @@ export function effectiveCheckedOff(list) {
   return manual;
 }
 
-// ── AI 存量转化:从打卡记录生成咖啡清单草稿 ──
-export function buildCoffeeDraft() {
-  const coffee = MY_CHECKINS.filter(
-    (c) => c.poi?.category?.includes("咖啡") && c.photos?.length > 0
-  );
-  // 按店去重
+// ── 类目归一(选店筛选 / 同主题匹配共用) ──
+export const CATEGORY_BUCKETS = ["美食", "咖啡", "酒店", "景点", "SPA", "购物", "运动", "其他"];
+export function categorize(cat = "") {
+  if (/咖啡/.test(cat)) return "咖啡";
+  if (/酒店|民宿/.test(cat)) return "酒店";
+  if (/SPA|按摩|足疗|美容|美发/i.test(cat)) return "SPA";
+  if (/博物|展览|景点|教堂|公园|广场|建筑|集市|古迹|宗教|山/.test(cat)) return "景点";
+  if (/购物|商场/.test(cat)) return "购物";
+  if (/网球|健身|运动|球场|滑雪|游泳/.test(cat)) return "运动";
+  if (/菜|餐|食|火锅|烧烤|料理|小吃|烘焙|面包|酒馆|酒吧|海鲜|粥|tapas|bar/i.test(cat)) return "美食";
+  return "其他";
+}
+
+// ── 同主题的其他作者清单(仅公域流量的清单尾部使用) ──
+export function getSameThemeLists(list, limit = 6) {
+  const buckets = new Set(list.items.map((it) => categorize(it.poi?.category)));
+  const names = new Set(list.items.map((it) => it.poi?.name));
+  return loadLists()
+    .filter((l) => l.visibility === "public" && l.id !== list.id && l.owner?.id !== list.owner?.id)
+    .map((l) => {
+      const shareStore = l.items.some((it) => names.has(it.poi?.name));
+      const shareTheme = l.items.some((it) => buckets.has(categorize(it.poi?.category)));
+      return { l, score: (shareStore ? 2 : 0) + (shareTheme ? 1 : 0) };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || (b.l.likeCount || 0) - (a.l.likeCount || 0))
+    .slice(0, limit)
+    .map((x) => x.l);
+}
+
+// ── 存量转化:近期打卡的咖啡店(MY_CHECKINS 为时间倒序,取最近去重的 N 家) ──
+export function getRecentCoffeeCheckins(limit = 7) {
   const seen = new Set();
-  const unique = coffee.filter((c) => {
+  return MY_CHECKINS.filter((c) => {
+    if (!c.poi?.category?.includes("咖啡") || !c.photos?.length) return false;
     if (seen.has(c.poi.name)) return false;
     seen.add(c.poi.name);
     return true;
-  });
+  }).slice(0, limit);
+}
+
+// ── 咖啡草稿曲库:上海 9 家(理由带入用户自己发布过的原文,图片复用 mock 图库) ──
+const DRAFT_IMG = {
+  coffee1: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80",
+  coffee2: "https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=600&q=80",
+  coffee3: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=600&q=80",
+  coffee4: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600&q=80",
+  coffee5: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&q=80",
+  bakery: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80",
+  cafe: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&q=80",
+  drink: "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=600&q=80",
+  brunch1: "https://images.unsplash.com/photo-1493770348161-369560ae357d?w=600&q=80",
+  brunch2: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&q=80",
+};
+
+const cafePoi = (name, district) => ({ name, city: "上海", district, category: "咖啡", emoji: "☕" });
+
+const COFFEE_DRAFT_STORES = [
+  {
+    poi: cafePoi("禧兴 Liveliness coffee shop", "淮海路"),
+    photos: [DRAFT_IMG.coffee2],
+    allPhotos: [DRAFT_IMG.coffee2, DRAFT_IMG.bakery, DRAFT_IMG.coffee1],
+    text: "四处喝了一年,禧兴仍是最爱也最常向人推荐的店。手冲出品稳定,玻利维亚不酸不苦冲得很平衡,云南萨奇姆豆好喝哭。糖火烧司康、青酱塔塔贝果都超预期。奶白窗帘配木桌椅像理想客厅,上午人不多,安静又快乐。",
+  },
+  {
+    poi: cafePoi("page coffee", "静安"),
+    photos: [DRAFT_IMG.coffee1],
+    text: "卡布奇诺斗胆提名上海top1:浅烘豆做卡布还能打出绵密均匀的奶泡,味道干净,封神。菜单里的冰玉露是在日本喝过、国内买不到的茶,味道完全准确。出品永远稳定,带第一次来的朋友必点卡布。",
+  },
+  {
+    poi: cafePoi("No.23 U'NI'VER'SE(社区店)", "静安"),
+    photos: [DRAFT_IMG.cafe],
+    text: "让人连着两周都来的神仙社区店。白玉兰dirty品质非常好,接骨木咖啡气泡水也好喝;奥利奥曲奇和伯爵红茶司康看着平平无奇、入口啧啧称奇。里屋桌子还藏着彩蛋,细节处处有惊喜。",
+  },
+  {
+    poi: cafePoi("coffee slow pour", "黄浦"),
+    photos: [DRAFT_IMG.drink],
+    text: "温馨小店,主打一个用心。特调pink bubble乌梅味浓郁,配柠檬香气奶盖很舒服,看卡片才发现杯里放的是青梅西柚果冰——这种小心思很难不爱。中午人不多,适合安静喝一杯。",
+  },
+  {
+    poi: cafePoi("Marmalade(奉贤路店)", "静安"),
+    photos: [DRAFT_IMG.coffee4],
+    text: "日式风格小店,气氛松弛、音乐轻松,还宠物友好。佛手香柚冷萃清爽,\"毒液美食\"选酒香豆风味很浓,做冰拿铁应该也好喝。附近吃完饭顺路来一杯刚好。",
+  },
+  {
+    poi: cafePoi("特写南站", "徐汇"),
+    photos: [DRAFT_IMG.coffee3],
+    text: "惊艳的一家店。主理人建筑出身,整店品牌感和设计感都很强,从云南豆子到本地陶土烧的\"一方水土杯\"都在还原在地感,每个角落都出片。周末最好提前预约,不然容易没位置。",
+  },
+  {
+    poi: cafePoi("沪水焙煎室(淡水路店)", "黄浦"),
+    photos: [DRAFT_IMG.coffee5],
+    text: "海苔味Dirty非常有特点,丝丝咸香给dirty加了记忆点;木姜野夏适合木姜子爱好者(个人觉得风味还能再猛一点)。店内老缝纫机等装饰很有心思,值得专程来打一杯特调。",
+  },
+  {
+    poi: cafePoi("Book a Coffee 书洞咖啡(静安店)", "静安"),
+    photos: [DRAFT_IMG.brunch1],
+    text: "两片联通区域,一片在室外,环境非常不错。菜单丰富,特调偏甜口、糖能放大风味;老板娘友善,会主动提醒有优惠可用。这个位置这个价格,性价比确实高。",
+  },
+  {
+    poi: cafePoi("Coffee Spot", "静安"),
+    photos: [DRAFT_IMG.brunch2],
+    text: "冬季菜单选了埃塞豆,黑咖平衡好喝,奶咖超浓郁。特调会跟着季节换,热特调加玄米茶很适合冬天(第一口香,后面偏酸,见仁见智)。想认真喝一杯豆子风味的时候来。",
+  },
+];
+
+export function buildCoffeeDraft() {
+  // AI 只做选店筛选,不代写:标题留白由用户自己起,只给一个可一键填入的建议;理由带入用户自己发布过的原文
   return {
-    title: "我私藏的咖啡馆地图",
-    description: "AI 从你的打卡记录整理 · 理由摘自你当时写下的话",
-    items: unique.map((c) => ({
-      checkinId: c.id,
-      poi: c.poi,
-      allPhotos: c.photos,
-      selectedPhoto: c.photos[0],
-      // 理由草稿只从用户自己的打卡文字抽取,绝不虚构;没写过就留空待补
-      text: (c.text || "").slice(0, 50),
+    title: "",
+    suggestedTitle: "四处喝了一年的咖啡私藏",
+    description: "",
+    items: COFFEE_DRAFT_STORES.map((s) => ({
+      checkinId: null,
+      poi: s.poi,
+      allPhotos: s.allPhotos || s.photos,
+      photos: s.photos,
+      text: s.text,
     })),
   };
 }

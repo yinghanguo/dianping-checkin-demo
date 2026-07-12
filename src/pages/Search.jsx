@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { STORE_INFO, NJXL_SEARCH_RESULTS, SH_IMG, shPoi } from "../data/shanghaiStores";
-import { getList, beenThereStats } from "../data/lists";
+import { getList } from "../data/lists";
 
 // 搜索结果页(对齐真实点评样式) — 搜索词「南京西路」
 // 清单卡片穿插在商户结果之后:高决策场景下,"一个靠谱的人替你选好"
@@ -165,7 +165,7 @@ export default function Search() {
           <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            onClick={() => navigate(`/album/${list.id}`)}
+            onClick={() => navigate(`/album/${list.id}`, { state: { src: "public" } })}
             className="w-full text-left mt-2 px-3 py-3.5"
             style={{ background: "linear-gradient(135deg, #FFFAF4, #FFF3E6)", borderTop: "1px solid #FFE8D0", borderBottom: "1px solid #FFE8D0" }}
           >
@@ -180,7 +180,7 @@ export default function Search() {
                   <span className="text-[10.5px] shrink-0" style={{ color: "#E65000" }}>的私藏清单</span>
                 </div>
                 <div className="text-[10px] text-dpText-tertiary mt-px">
-                  {list.items.length} 家店 · 作者全部去过 ✓ · 被收藏 {list.saveCount} 次
+                  {list.items.length} 家店 · 被收藏 {list.saveCount} 次
                 </div>
               </div>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E65000" strokeWidth="2" className="shrink-0">

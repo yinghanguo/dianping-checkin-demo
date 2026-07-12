@@ -4,9 +4,8 @@ import "leaflet/dist/leaflet.css";
 import { getStoreCoords } from "../data/shanghaiStores";
 import { MY_CHECKINS } from "../data/myCheckins";
 
-// 清单地图模式 — 把清单变成"可以走的路线":
-//   序号 pin(①②③)按清单顺序连成虚线;拔草状态画在 pin 上(去过=绿✓,没去过=橙)
-//   底部横滑店卡与 pin 双向联动
+// 清单地图模式 — 清单里的店以独立序号 pin 呈现(不连线)
+//   拔草状态画在 pin 上(去过=绿✓,没去过=橙);底部横滑店卡与 pin 双向联动
 export default function ListMap({ list, checkedSet, height = 230, onStoreClick }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
@@ -50,13 +49,7 @@ export default function ListMap({ list, checkedSet, height = 230, onStoreClick }
     if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
     const layer = L.layerGroup();
 
-    // 路线虚线(白描边 + 橙虚线,按清单顺序)
-    if (points.length >= 2) {
-      const latlngs = points.map((p) => [p.lat, p.lng]);
-      L.polyline(latlngs, { color: "#ffffff", weight: 6, opacity: 0.9, lineJoin: "round", lineCap: "round", interactive: false }).addTo(layer);
-      L.polyline(latlngs, { color: "#FF6F00", weight: 3, opacity: 0.9, dashArray: "6 6", lineJoin: "round", lineCap: "round", interactive: false }).addTo(layer);
-    }
-
+    // 各店独立标点,不连线
     points.forEach((p) => {
       const done = checkedSet?.has(p.poi?.name);
       const isSel = selectedIdx === p.idx;
@@ -101,7 +94,7 @@ export default function ListMap({ list, checkedSet, height = 230, onStoreClick }
           className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-full text-[10px] text-white font-medium pointer-events-none"
           style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
         >
-          🚶 照着走 · {points.length} 站{checkedSet ? ` · 已去 ${doneCount}` : ""}
+          📍 {points.length} 家店{checkedSet ? ` · 已去 ${doneCount}` : ""}
         </div>
       </div>
 
