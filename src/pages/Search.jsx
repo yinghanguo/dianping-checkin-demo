@@ -28,9 +28,30 @@ function Stars({ rating, size = 13 }) {
   );
 }
 
+// 混排内容行的笔记 mock(对齐真实点评"相关内容"卡)
+const NOTE_CARDS = [
+  { title: "新荣记开茶餐厅 人均80元 新荣记开的港式茶", author: "爱吃的阿越", likes: 355, img: SH_IMG.fengshengli, dist: "651m" },
+  { title: "🔥上海粤菜榜单 No.1 正宗肠粉王!! 吃到一家", author: "没有冰拿铁会呆", likes: 128, img: SH_IMG.laoshaoxing, dist: "436m" },
+  { title: "早茶的好去处 老牌粤菜聚餐天花板", author: "一只松_", likes: 89, img: SH_IMG.donghai, dist: "1.2km" },
+  { title: "南西白领工作日续命指南 抓紧收藏", author: "清風徐來821", likes: 178, img: SH_IMG.bco, dist: "500m" },
+];
+const noteAvatar = (name) =>
+  `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name)}&backgroundColor=ffe0b2`;
+
 export default function Search() {
   const navigate = useNavigate();
-  const list = getList("list_f_njxl_richang");
+  // 混排横滑:清单 → 笔记 → 笔记 循环(清单与笔记混排,不再单独放横滑清单)
+  const mixedRow = React.useMemo(() => {
+    const lists = [getList("list_f_njxl_richang"), getList("list_r_cantonese")].filter(Boolean);
+    const out = [];
+    let li = 0, ni = 0;
+    while (li < lists.length || ni < NOTE_CARDS.length) {
+      if (li < lists.length) out.push({ type: "list", data: lists[li++] });
+      for (let k = 0; k < 2 && ni < NOTE_CARDS.length; k++) out.push({ type: "note", data: NOTE_CARDS[ni++] });
+      if (li >= lists.length && ni >= NOTE_CARDS.length) break;
+    }
+    return out;
+  }, []);
 
   const openStore = (name) => {
     const info = STORE_INFO[name];
@@ -110,13 +131,13 @@ export default function Search() {
           ))}
         </div>
 
-        {/* ── 商户结果 ── */}
+        {/* ── 商户结果(第 2 个商户后插混排横滑内容行) ── */}
         <div className="bg-white">
           {NJXL_SEARCH_RESULTS.map((name, idx) => {
             const info = STORE_INFO[name];
             return (
+              <React.Fragment key={name}>
               <button
-                key={name}
                 onClick={() => openStore(name)}
                 className="w-full px-3 py-3.5 flex gap-3 text-left border-b border-[#f7f7f7]"
               >
@@ -156,48 +177,25 @@ export default function Search() {
                   ))}
                 </div>
               </button>
+              {/* 第 2 个商户后:混排横滑内容行(清单→笔记→笔记 循环) */}
+              {idx === 1 && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="py-3 border-b border-[#f7f7f7]">
+                  <div className="px-3 text-[15px] font-bold text-dpInk mb-2">“南京西路”相关内容</div>
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar px-3 pb-1">
+                    {mixedRow.map((item, i) =>
+                      item.type === "list" ? (
+                        <MixListCard key={`l${i}`} list={item.data} onClick={() => navigate(`/album/${item.data.id}`, { state: { src: "public" } })} />
+                      ) : (
+                        <MixNoteCard key={`n${i}`} note={item.data} />
+                      )
+                    )}
+                  </div>
+                </motion.div>
+              )}
+              </React.Fragment>
             );
           })}
         </div>
-
-        {/* ── 清单卡片穿插(方案 5.5:人格化,头像前置,与店铺卡区隔) ── */}
-        {list && (
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={() => navigate(`/album/${list.id}`, { state: { src: "public" } })}
-            className="w-full text-left mt-2 px-3 py-3.5"
-            style={{ background: "linear-gradient(135deg, #FFFAF4, #FFF3E6)", borderTop: "1px solid #FFE8D0", borderBottom: "1px solid #FFE8D0" }}
-          >
-            <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-white shrink-0" style={{ border: "1.5px solid #FFD5A8" }}>
-                <img src={list.owner.avatar} alt="" className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[12.5px] font-semibold text-dpInk">{list.owner.name}</span>
-                  <span className="text-[9px] px-1 py-px rounded font-bold text-white shrink-0" style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}>{list.owner.level}</span>
-                  <span className="text-[10.5px] shrink-0" style={{ color: "#E65000" }}>的私藏清单</span>
-                </div>
-                <div className="text-[10px] text-dpText-tertiary mt-px">
-                  {list.items.length} 家店 · 被收藏 {list.saveCount} 次
-                </div>
-              </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E65000" strokeWidth="2" className="shrink-0">
-                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div className="text-[15px] font-bold text-dpInk mb-2">「{list.title}」</div>
-            <div className="flex gap-1.5">
-              {list.items.slice(0, 4).map((it, i) => (
-                <div key={i} className="flex-1 rounded-lg overflow-hidden bg-[#f0f0f0]" style={{ aspectRatio: "1/1" }}>
-                  <img src={it.photo} alt="" className="w-full h-full object-cover" loading="lazy" />
-                </div>
-              ))}
-            </div>
-            <div className="text-[11.5px] text-dpText-secondary mt-2 truncate">“{list.items[0]?.reason}”</div>
-          </motion.button>
-        )}
 
         {/* ── 相关内容 ── */}
         <div className="px-3 pt-4 pb-2">
@@ -209,6 +207,81 @@ export default function Search() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 混排行:清单卡(四宫格封面 + 人格化头像) ──
+function MixListCard({ list, onClick }) {
+  const photos = list.items.map((it) => it.photo).slice(0, 4);
+  return (
+    <button
+      onClick={onClick}
+      className="shrink-0 w-[150px] rounded-xl overflow-hidden text-left bg-white"
+      style={{ border: "1px solid #FFE0C7" }}
+    >
+      <div className="relative w-full" style={{ aspectRatio: "3/4" }}>
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-white">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="bg-[#f0f0f0] overflow-hidden">
+              {photos[i % photos.length] && (
+                <img src={photos[i % photos.length]} alt="" className="w-full h-full object-cover" loading="lazy" />
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-[9px] text-white font-medium flex items-center gap-0.5" style={{ background: "rgba(255,111,0,0.9)" }}>
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+          </svg>
+          私藏清单
+        </div>
+        <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-[9px] text-white" style={{ background: "rgba(0,0,0,0.5)" }}>
+          {list.items.length} 家店
+        </div>
+      </div>
+      <div className="px-2 py-2">
+        <div className="text-[12px] font-medium text-dpInk leading-snug" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 32 }}>
+          {list.title}
+        </div>
+        <div className="flex items-center justify-between mt-1.5 text-[10px] text-dpText-tertiary">
+          <div className="flex items-center gap-1 min-w-0">
+            <div className="w-3.5 h-3.5 rounded-full overflow-hidden shrink-0 bg-[#f0f0f0]">
+              <img src={list.owner.avatar} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="truncate">{list.owner.name}</span>
+          </div>
+          <span className="shrink-0">🔖 {list.saveCount}</span>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ── 混排行:笔记卡 ──
+function MixNoteCard({ note }) {
+  return (
+    <div className="shrink-0 w-[150px] rounded-xl overflow-hidden bg-white" style={{ border: "1px solid #f0f0f0" }}>
+      <div className="relative w-full" style={{ aspectRatio: "3/4" }}>
+        <img src={note.img} alt="" className="w-full h-full object-cover" loading="lazy" />
+        <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-[9px] text-white flex items-center gap-0.5" style={{ background: "rgba(0,0,0,0.5)" }}>
+          📍 {note.dist}
+        </div>
+      </div>
+      <div className="px-2 py-2">
+        <div className="text-[12px] font-medium text-dpInk leading-snug" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 32 }}>
+          {note.title}
+        </div>
+        <div className="flex items-center justify-between mt-1.5 text-[10px] text-dpText-tertiary">
+          <div className="flex items-center gap-1 min-w-0">
+            <div className="w-3.5 h-3.5 rounded-full overflow-hidden shrink-0 bg-[#f0f0f0]">
+              <img src={noteAvatar(note.author)} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="truncate">{note.author}</span>
+          </div>
+          <span className="shrink-0">♡ {note.likes}</span>
         </div>
       </div>
     </div>

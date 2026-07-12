@@ -78,7 +78,7 @@ export default function AlbumDetail() {
     const next = !meta.saved;
     setListMeta(id, { saved: next, subscribed: next });
     setTick((t) => t + 1);
-    showToast(next ? "已收藏这份私藏 · 更新时会提醒你 🔔" : "已取消收藏");
+    showToast(next ? "已同步到 收藏·我的专辑 · 更新时会提醒你 🔔" : "已取消收藏");
   };
 
   const handleCheckOff = (poiName) => {

@@ -5,6 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FRIEND_FEED, FRIEND_STORIES } from "../data/friendFeed";
 import { FRIENDS } from "../data/friends";
 import { getUserCheckins } from "../utils/userCheckins";
+import { getList } from "../data/lists";
+
+// 好友发布清单的动态事件(关系链分发:好友发了清单,在关注流里出现)
+const LIST_EVENTS = [
+  { listId: "list_f_sh_qingke", time: "2 小时前", action: "公开了一份私藏清单" },
+  { listId: "list_r_coffee_sh", time: "昨天 20:14", action: "更新了私藏清单 · 新增 2 家店" },
+];
 
 const NIKI_AVATAR =
   {nikiAvatar};
@@ -162,8 +169,13 @@ export default function Following() {
         </div>
       )}
       <div className="space-y-0">
-        {FRIEND_FEED.map((item) => (
-          <FeedCard key={item.id} item={item} />
+        {FRIEND_FEED.map((item, idx) => (
+          <React.Fragment key={item.id}>
+            <FeedCard item={item} />
+            {/* 好友清单动态穿插:第 1 条后、第 3 条后 */}
+            {idx === 0 && <ListEventCard event={LIST_EVENTS[0]} navigate={navigate} />}
+            {idx === 2 && <ListEventCard event={LIST_EVENTS[1]} navigate={navigate} />}
+          </React.Fragment>
         ))}
       </div>
 
@@ -606,5 +618,65 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
         </button>
       </div>
     </motion.div>
+  );
+}
+
+// ── 好友清单动态卡:头像前置 + 四宫格封面 + 一句理由 ──
+function ListEventCard({ event, navigate }) {
+  const list = getList(event.listId);
+  if (!list) return null;
+  const photos = list.items.map((it) => it.photo).slice(0, 4);
+  return (
+    <button
+      onClick={() => navigate(`/album/${list.id}`, { state: { src: "public" } })}
+      className="block w-full text-left px-4 py-4 border-b border-[#f5f5f5]"
+      style={{ background: "linear-gradient(180deg, #FFFBF6, #ffffff 60%)" }}
+    >
+      {/* 头部 */}
+      <div className="flex items-start gap-2.5 mb-2.5">
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-[#f5f5f5] shrink-0">
+          <img src={list.owner.avatar} alt="" className="w-full h-full object-cover" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[14px] font-semibold text-dpInk truncate">{list.owner.name}</span>
+            <span className="text-[9px] px-1 py-px rounded font-bold text-white shrink-0" style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}>
+              {list.owner.level}
+            </span>
+          </div>
+          <div className="text-[11px] mt-0.5" style={{ color: "#E65000" }}>
+            {event.action}
+          </div>
+        </div>
+        <span className="text-[11px] text-dpText-tertiary shrink-0">{event.time}</span>
+      </div>
+
+      {/* 清单体 */}
+      <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #FFE8D0" }}>
+        <div className="grid grid-cols-4 gap-px bg-white">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="bg-[#f0f0f0] overflow-hidden" style={{ aspectRatio: "1/1" }}>
+              {photos[i % photos.length] && (
+                <img src={photos[i % photos.length]} alt="" className="w-full h-full object-cover" loading="lazy" />
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="px-3 py-2.5" style={{ background: "#FFFAF4" }}>
+          <div className="flex items-center gap-1.5">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2.5">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+            </svg>
+            <span className="text-[14px] font-bold text-dpInk truncate">{list.title}</span>
+          </div>
+          <div className="text-[11px] text-dpText-secondary mt-1 truncate">
+            “{list.items[0]?.reason}”
+          </div>
+          <div className="text-[10.5px] text-dpText-tertiary mt-1">
+            {list.items.length} 家店 · 🔖 {list.saveCount} · ♡ {list.likeCount}
+          </div>
+        </div>
+      </div>
+    </button>
   );
 }

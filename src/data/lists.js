@@ -143,7 +143,7 @@ const FRIEND_LISTS = [
   // ── 上海 · 南京西路(核心演示数据:门店在多份清单间刻意重叠) ──
   {
     id: "list_f_njxl_richang",
-    owner: { id: "friend-2", name: "日酱", avatar: friendAvatar("日酱", "ffdfbf"), level: "Lv.7" },
+    owner: { id: "friend-2", name: "landy_js", avatar: friendAvatar("landy_js", "ffdfbf"), level: "Lv.7" },
     title: "南京西路，我只带朋友去这几家",
     description: "在南西上班第四年。游客去丰盛里打卡，我去这几家续命。",
     cover: SH_IMG.lighthouse,
@@ -184,8 +184,8 @@ const FRIEND_LISTS = [
     id: "list_f_sh_qingke",
     owner: {
       id: "friend-1",
-      name: "一只美食界的Zoe...",
-      avatar: friendAvatar("一只美食界的Zoe...", "b6e3f4"),
+      name: "爱吃能吃的JoJo",
+      avatar: friendAvatar("爱吃能吃的JoJo", "b6e3f4"),
       level: "Lv.8",
     },
     title: "上海请客不出错的馆子",
@@ -264,7 +264,7 @@ const FRIEND_LISTS = [
   },
   {
     id: "list_f_bcn_coffee",
-    owner: { id: "friend-2", name: "日酱", avatar: friendAvatar("日酱", "ffdfbf"), level: "Lv.7" },
+    owner: { id: "friend-2", name: "landy_js", avatar: friendAvatar("landy_js", "ffdfbf"), level: "Lv.7" },
     title: "巴塞罗那咖啡因地图",
     description: "在巴塞晃了三个月，咖啡因摄入全靠这几家。",
     cover: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80",
@@ -305,8 +305,8 @@ const FRIEND_LISTS = [
     id: "list_f_tapas",
     owner: {
       id: "friend-1",
-      name: "一只美食界的Zoe...",
-      avatar: friendAvatar("一只美食界的Zoe...", "b6e3f4"),
+      name: "爱吃能吃的JoJo",
+      avatar: friendAvatar("爱吃能吃的JoJo", "b6e3f4"),
       level: "Lv.8",
     },
     title: "西班牙小酒馆私藏 · 只放去过三次以上的",
@@ -693,6 +693,7 @@ export function buildCoffeeDraft() {
     title: "",
     suggestedTitle: "四处喝了一年的咖啡私藏",
     description: "",
+    category: "咖啡",
     items: COFFEE_DRAFT_STORES.map((s) => ({
       checkinId: null,
       poi: s.poi,
@@ -701,6 +702,46 @@ export function buildCoffeeDraft() {
       text: s.text,
     })),
   };
+}
+
+// ── 草稿箱:把近期打卡按类目自动归置成待整理草稿(Me 页 banner 推荐来源) ──
+const DRAFT_TITLE_SUGGESTIONS = {
+  美食: "在上海反复回访的馆子",
+  运动: "我的上海球场替代方案",
+  景点: "散步半径里的好去处",
+};
+
+export function buildDraftBox() {
+  const drafts = [buildCoffeeDraft()]; // 咖啡:精选草稿(与打卡清单 9 店对齐)
+  const buckets = {};
+  const seen = new Set();
+  MY_CHECKINS.forEach((c) => {
+    if (!c.photos?.length || c.poi?.city !== "上海") return;
+    const b = categorize(c.poi?.category);
+    if (b === "咖啡" || b === "其他") return;
+    if (seen.has(b + c.poi.name)) return;
+    seen.add(b + c.poi.name);
+    (buckets[b] ||= []).push(c);
+  });
+  Object.entries(buckets)
+    .filter(([, arr]) => arr.length >= 3)
+    .sort((a, b) => b[1].length - a[1].length)
+    .forEach(([bucket, arr]) => {
+      drafts.push({
+        title: "",
+        suggestedTitle: DRAFT_TITLE_SUGGESTIONS[bucket] || `我常去的上海${bucket}好店`,
+        description: "",
+        category: bucket,
+        items: arr.slice(0, 9).map((c) => ({
+          checkinId: c.id,
+          poi: c.poi,
+          allPhotos: c.photos,
+          photos: [c.photos[0]],
+          text: (c.text || "").slice(0, 60),
+        })),
+      });
+    });
+  return drafts;
 }
 
 export function countCoffeeCheckins() {

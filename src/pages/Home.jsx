@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import Following from "./Following";
-import { getList } from "../data/lists";
+import { getList, loadLists } from "../data/lists";
 import { STORE_INFO, SH_IMG, shPoi } from "../data/shanghaiStores";
 
 // 大众点评首页(对齐真实样式):顶部 Tab、搜索条、分类宫格、点评榜单/免费试双卡、双列瀑布流
@@ -87,7 +87,18 @@ export default function Home() {
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-dpOrange rounded-full" />
             )}
           </button>
-          {["附近", "品质外卖", "热点", "周末去哪", "旅"].map((t) => (
+          <button
+            onClick={() => setTopTab("nearby")}
+            className={`shrink-0 text-[16px] pb-1 relative ${
+              topTab === "nearby" ? "text-dpInk font-bold" : "text-dpText-secondary"
+            }`}
+          >
+            附近
+            {topTab === "nearby" && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-dpOrange rounded-full" />
+            )}
+          </button>
+          {["品质外卖", "热点", "周末去哪", "旅"].map((t) => (
             <button key={t} className="shrink-0 text-[16px] pb-1 text-dpText-secondary">
               {t}
             </button>
@@ -129,6 +140,8 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
           <Following />
         </div>
+      ) : topTab === "nearby" ? (
+        <NearbyTab navigate={navigate} />
       ) : (
       <div className="flex-1 overflow-y-auto no-scrollbar">
         {/* ── 分类宫格(2×5) ── */}
@@ -343,9 +356,9 @@ function FeedCard({ feed, onClick }) {
   );
 }
 
-// ── 信息流清单卡片:四宫格封面 + 主题 + 创作者(人格化:头像前置) ──
-function ListFeedCard({ navigate }) {
-  const list = getList("list_f_njxl_richang");
+// ── 信息流清单卡片:四宫格封面 + 主题 + 创作者(人格化:头像前置);支持外部传入清单(附近 Tab 复用) ──
+function ListFeedCard({ navigate, list: listProp }) {
+  const list = listProp || getList("list_f_njxl_richang");
   if (!list) return null;
   const photos = list.items.map((it) => it.photo).slice(0, 4);
   return (
@@ -402,5 +415,132 @@ function ListFeedCard({ navigate }) {
         </div>
       </div>
     </button>
+  );
+}
+
+// ── 附近 Tab:附近活动/热门打卡 + 瀑布流(笔记与「附近的清单」混排分发) ──
+const NEARBY_NOTES = [
+  { title: "单方面宣布爱上静安寺商圈这家店😍", author: "盈美·科颜Skin Clinic", likes: 42, img: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=600&q=80", poi: "盈美·科颜Skin Clinic", dist: "1.5km" },
+  { title: "爱上网球是我的宿命☀️🎾", author: "lulu", likes: 69, img: "https://images.unsplash.com/photo-1622163642998-1ea32b0bbc67?w=600&q=80", poi: "QuickQuash网球·匹克球", dist: "1.2km" },
+  { title: "这个小肚肚也太好戳了🤣", author: "清風徐來821", likes: 178, img: "https://images.unsplash.com/photo-1493770348161-369560ae357d?w=600&q=80", poi: "Happiness Coffee", dist: "1.5km" },
+  { title: "预计明天上海有19w人来抢60r的粒子狂热", author: "欣欣可爱不动了u", likes: 3, img: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&q=80", poi: "开时仓OPENMAXX", dist: "424m" },
+];
+
+function NearbyTab({ navigate }) {
+  // 附近的清单:公开的上海清单按热度取前几份,穿插进瀑布流
+  const nearbyLists = React.useMemo(
+    () =>
+      loadLists()
+        .filter((l) => l.visibility === "public" && l.owner?.id !== "me" && l.items.some((it) => it.poi?.city === "上海"))
+        .sort((a, b) => (b.saveCount || 0) - (a.saveCount || 0))
+        .slice(0, 3),
+    []
+  );
+  const dists = ["500m", "1.2km", "800m"];
+
+  // 双列瀑布流:笔记 + 清单混排(左右列交替塞)
+  const cells = [];
+  let ni = 0;
+  nearbyLists.forEach((l, i) => {
+    if (NEARBY_NOTES[ni]) cells.push({ type: "note", data: NEARBY_NOTES[ni++] });
+    cells.push({ type: "list", data: l, dist: dists[i % dists.length] });
+    if (NEARBY_NOTES[ni]) cells.push({ type: "note", data: NEARBY_NOTES[ni++] });
+  });
+  while (NEARBY_NOTES[ni]) cells.push({ type: "note", data: NEARBY_NOTES[ni++] });
+
+  return (
+    <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
+      {/* 定位 + 筛选 chips */}
+      <div className="px-3 pt-1 pb-2 flex items-center gap-2">
+        <span className="flex items-center gap-0.5 text-[13px] font-medium text-dpInk shrink-0">
+          📍 新福康里 <span className="text-[9px]">▾</span>
+        </span>
+        <div className="flex gap-1.5 ml-auto">
+          {["附近1km", "好吃", "好玩"].map((c) => (
+            <span key={c} className="px-2.5 h-7 rounded-full bg-[#F5F5F5] text-[12px] text-dpText-secondary flex items-center">{c}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* 附近活动 / 热门打卡 双卡 */}
+      <div className="px-2.5 grid grid-cols-2 gap-2 mb-2">
+        <div className="bg-white rounded-2xl p-3" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div className="text-[14px] font-bold text-dpInk mb-2">附近活动 ›</div>
+          <button
+            onClick={() => navigate("/pk")}
+            className="w-full flex items-center gap-2 text-left"
+          >
+            <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0" style={{ background: "linear-gradient(120deg,#2B1200,#7A2E00)" }}>
+              <div className="w-full h-full flex items-center justify-center text-[20px]">🏆</div>
+            </div>
+            <div className="min-w-0">
+              <div className="text-[12px] font-semibold text-dpInk leading-snug">私藏杯·上海站｜打卡即助攻</div>
+              <div className="text-[10px] text-dpText-tertiary mt-0.5">开赛中 · 567m</div>
+            </div>
+          </button>
+        </div>
+        <div className="bg-white rounded-2xl p-3" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div className="text-[14px] font-bold text-dpInk mb-1.5">热门打卡 ›</div>
+          {[
+            { r: 1, name: "王富贵火锅", n: "13623打卡", d: "1.8km" },
+            { r: 2, name: "3号仓库·创意中国", n: "8631打卡", d: "1.5km" },
+            { r: 3, name: "O'eat", n: "8477打卡", d: "681m" },
+          ].map((s) => (
+            <div key={s.r} className="flex items-center gap-1.5 py-0.5">
+              <span className="w-4 h-4 rounded text-[10px] font-bold text-white flex items-center justify-center shrink-0" style={{ background: s.r === 1 ? "#FF6F00" : s.r === 2 ? "#FF9838" : "#FFC08A" }}>{s.r}</span>
+              <span className="text-[11px] font-medium text-dpInk truncate flex-1">{s.name}</span>
+              <span className="text-[9.5px] text-dpText-tertiary shrink-0">{s.n}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 瀑布流:笔记 + 附近的清单混排 */}
+      <div className="px-2 grid grid-cols-2 gap-2 items-start">
+        {[0, 1].map((col) => (
+          <div key={col} className="space-y-2">
+            {cells.filter((_, i) => i % 2 === col).map((cell, i) =>
+              cell.type === "list" ? (
+                <div key={`l${i}`} className="relative">
+                  <ListFeedCard navigate={navigate} list={cell.data} />
+                  <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[9px] text-white" style={{ background: "rgba(0,0,0,0.5)" }}>
+                    离你 {cell.dist}
+                  </div>
+                </div>
+              ) : (
+                <NearbyNoteCard key={`n${i}`} note={cell.data} />
+              )
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NearbyNoteCard({ note }) {
+  return (
+    <div className="bg-white rounded-xl overflow-hidden" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)", border: "1px solid #f5f5f5" }}>
+      <div className="relative w-full" style={{ aspectRatio: "3/4" }}>
+        <img src={note.img} alt="" className="w-full h-full object-cover" loading="lazy" />
+        <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] text-white flex items-center gap-0.5" style={{ background: "rgba(0,0,0,0.5)" }}>
+          📍 {note.poi} | {note.dist}
+        </div>
+      </div>
+      <div className="px-2 py-2">
+        <div className="text-[13px] font-medium text-dpInk leading-snug" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+          {note.title}
+        </div>
+        <div className="flex items-center justify-between mt-2 text-[11px] text-dpText-tertiary">
+          <div className="flex items-center gap-1 min-w-0">
+            <div className="w-4 h-4 rounded-full overflow-hidden bg-[#f0f0f0] shrink-0">
+              <img src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(note.author)}&backgroundColor=ffdfbf`} alt="" className="w-full h-full object-cover" />
+            </div>
+            <span className="truncate">{note.author}</span>
+          </div>
+          <span className="shrink-0">♡ {note.likes}</span>
+        </div>
+      </div>
+    </div>
   );
 }

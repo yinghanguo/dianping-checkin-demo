@@ -231,7 +231,7 @@ export const FRIEND_STORIES = [
   { friend: F("艾伦没有派对"), unread: true, city: "德清", time: "昨天", isTravel: true, photo: IMG.noodle, poi: "程三合·三合鲜虾面" },
   { friend: { id: "jojo", name: "JoJo", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=JoJo&backgroundColor=ffd5dc" }, unread: true, city: "首尔", time: "昨天", isTravel: true, photo: IMG.cafe1, poi: "Fritz Coffee" },
   { friend: F("penguinking"), unread: true, city: "上海", time: "昨天", photo: IMG.coffee1, poi: "沪水焙煎室", isTravel: false },
-  { friend: F("日酱"), unread: false, city: "大阪", time: "昨天", photo: IMG.food2, poi: "一兰拉面" },
+  { friend: F("landy_js"), unread: false, city: "大阪", time: "昨天", photo: IMG.food2, poi: "一兰拉面" },
   { friend: F("JLRu"), unread: false, city: "上海", time: "2天前", photo: IMG.food1, poi: "甬府" },
   { friend: F("chang"), unread: false, city: "北京", time: "2天前", photo: IMG.food3, poi: "四季民福" },
   { friend: F("Rouyi"), unread: false, city: "成都", time: "2天前", photo: IMG.food4, poi: "小龙坎" },

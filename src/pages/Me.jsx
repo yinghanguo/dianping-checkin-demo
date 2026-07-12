@@ -1,7 +1,7 @@
 import nikiAvatar from "../assets/niki-avatar.svg";
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import StatusBar from "../components/StatusBar";
 import { MY_CHECKINS, deriveStats } from "../data/myCheckins";
 import { getUserCheckins } from "../utils/userCheckins";
@@ -9,7 +9,7 @@ import {
   getMyLists,
   getSavedLists,
   effectiveCheckedOff,
-  buildCoffeeDraft,
+  buildDraftBox,
 } from "../data/lists";
 
 // 「我的」页 — 高度还原点评原生设计
@@ -30,23 +30,32 @@ export default function Me() {
   }, []);
 
   // 内容流 Tab
-  const [tab, setTab] = useState("动态");
+  const [tab, setTab] = useState("打卡");
   const [photoTab, setPhotoTab] = useState(false); // 私藏子 tab
   const [draftDismissed, setDraftDismissed] = useState(
     () => sessionStorage.getItem("dp_draft_dismissed") === "1"
   );
+  const [pkDismissed, setPkDismissed] = useState(
+    () => sessionStorage.getItem("dp_pk_banner_dismissed") === "1"
+  );
+  const [draftBoxOpen, setDraftBoxOpen] = useState(false);
 
   const myLists = useMemo(() => getMyLists(), [photoTab]);
   const savedLists = useMemo(() => getSavedLists(), [photoTab]);
-  const coffeeDraft = useMemo(() => buildCoffeeDraft(), []);
-  const totalListSaves = myLists.reduce((s, l) => s + (l.saveCount || 0), 0);
+  // 草稿箱:近期打卡按类目自动归置;banner 的内容推荐来自这里
+  const draftBox = useMemo(() => buildDraftBox(), []);
+  const coffeeDraft = draftBox[0];
 
-  const handleDraft = () => {
-    navigate("/album/create", { state: { draft: coffeeDraft } });
+  const handleDraft = (draft = coffeeDraft) => {
+    navigate("/album/create", { state: { draft } });
   };
   const dismissDraft = () => {
     sessionStorage.setItem("dp_draft_dismissed", "1");
     setDraftDismissed(true);
+  };
+  const dismissPk = () => {
+    sessionStorage.setItem("dp_pk_banner_dismissed", "1");
+    setPkDismissed(true);
   };
 
   return (
@@ -163,12 +172,12 @@ export default function Me() {
             decorEmoji="📍"
             onClick={() => navigate("/footprint")}
           />
-          {/* 收藏(含清单) */}
+          {/* 收藏(含清单):我的专辑 + 我收藏的清单,与收藏页联动 */}
           <DataCard
             title="收藏"
-            primary={`${new Set(myLists.flatMap((l) => l.items.map((i) => i.poi?.name))).size}`}
+            primary={`${new Set([...myLists, ...savedLists].flatMap((l) => l.items.map((i) => i.poi?.name))).size}`}
             primaryUnit="家店"
-            secondary={`${myLists.length}`}
+            secondary={`${myLists.length + savedLists.length}`}
             secondaryUnit="份清单"
             decorEmoji="🔖"
             onClick={() => navigate("/collection")}
@@ -184,68 +193,85 @@ export default function Me() {
           />
         </div>
 
-        {/* ── banner 轮播:草稿引导 + 私藏杯报名(横滑 + 2 秒自动轮播) ── */}
+        {/* ── banner 轮播:活动促稿(默认第一张) + 草稿推荐(来自草稿箱);两张都有 ✕,按钮沉底不与 ✕ 重叠 ── */}
         <BannerCarousel
           slides={[
+            ...(!pkDismissed
+              ? [
+                  <div
+                    key="pk"
+                    className="rounded-2xl pl-4 pr-3 py-2.5 relative overflow-hidden h-full"
+                    style={{ background: "linear-gradient(120deg, #2B1200 0%, #7A2E00 60%, #E65000 140%)" }}
+                  >
+                    <div className="absolute -right-3 -bottom-4 text-[48px] opacity-20 rotate-12 select-none">🏆</div>
+                    <button
+                      onClick={dismissPk}
+                      className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center z-10"
+                      style={{ background: "rgba(255,255,255,0.25)" }}
+                    >
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
+                        <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                    <div className="flex items-end gap-3">
+                      <button onClick={() => navigate("/pk?phase=submit")} className="flex-1 min-w-0 text-left">
+                        <div className="text-[13px] font-semibold text-white leading-snug pr-5">
+                          私藏杯 · 上海站提报中
+                        </div>
+                        <div className="text-[11px] mt-0.5" style={{ color: "#FFB27A" }}>
+                          把私藏拿出来比一比 · 大奖:Asia's 50 香港之旅
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => navigate("/pk?phase=submit")}
+                        className="shrink-0 px-3 h-7 rounded-full text-[12px] text-white font-medium mb-0.5"
+                        style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.35)" }}
+                      >
+                        去报名
+                      </button>
+                    </div>
+                  </div>,
+                ]
+              : []),
             ...(!draftDismissed && coffeeDraft.items.length >= 3
               ? [
                   <div
                     key="draft"
-                    className="rounded-2xl px-4 py-3 flex items-center gap-3 relative h-full"
+                    className="rounded-2xl pl-4 pr-3 py-2.5 relative h-full"
                     style={{
                       background: "linear-gradient(135deg, #FFF3E0, #FFE5C2)",
                       border: "1px solid rgba(255,111,0,0.18)",
                     }}
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold text-dpInk leading-snug">
-                        最近打卡了 {coffeeDraft.items.length} 家咖啡店
-                      </div>
-                      <div className="text-[11px] text-dpText-secondary mt-0.5">
-                        顺手整理成一份私藏清单？
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleDraft}
-                      className="shrink-0 px-3 h-8 rounded-full text-[12px] text-white font-medium"
-                      style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
-                    >
-                      查看草稿
-                    </button>
                     <button
                       onClick={dismissDraft}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/80 flex items-center justify-center"
+                      className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/90 flex items-center justify-center z-10"
                       style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.12)" }}
                     >
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="3">
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="3">
                         <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
                       </svg>
                     </button>
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-semibold text-dpInk leading-snug pr-5">
+                          最近打卡了 {coffeeDraft.items.length} 家咖啡店
+                        </div>
+                        <div className="text-[11px] text-dpText-secondary mt-0.5">
+                          草稿箱已按类目整理好,顺手发一份私藏清单？
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDraft()}
+                        className="shrink-0 px-3 h-7 rounded-full text-[12px] text-white font-medium mb-0.5"
+                        style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+                      >
+                        查看草稿
+                      </button>
+                    </div>
                   </div>,
                 ]
               : []),
-            <button
-              key="pk"
-              onClick={() => navigate("/pk?phase=submit")}
-              className="w-full rounded-2xl px-4 py-3 flex items-center gap-3 text-left relative overflow-hidden h-full"
-              style={{ background: "linear-gradient(120deg, #2B1200 0%, #7A2E00 60%, #E65000 140%)" }}
-            >
-              <div className="absolute -right-3 -bottom-4 text-[48px] opacity-20 rotate-12 select-none">🏆</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-semibold text-white leading-snug">
-                  私藏杯 · 上海站提报中
-                </div>
-                <div className="text-[11px] mt-0.5" style={{ color: "#FFB27A" }}>
-                  把私藏拿出来比一比 · 大奖:Asia's 50 香港之旅
-                </div>
-              </div>
-              <span
-                className="shrink-0 px-3 h-8 rounded-full text-[12px] text-white font-medium flex items-center"
-                style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.35)" }}
-              >
-                去报名
-              </span>
-            </button>,
           ]}
         />
 
@@ -280,7 +306,7 @@ export default function Me() {
         >
           <div className="flex items-center px-3 pt-3 border-b border-[#f5f5f5]">
             <div className="flex gap-5 flex-1">
-              {["动态", "笔记", "评价"].map((t) => (
+              {["打卡", "笔记", "评价"].map((t) => (
                 <button
                   key={t}
                   onClick={() => { setTab(t); setPhotoTab(false); }}
@@ -303,14 +329,6 @@ export default function Me() {
                 <span className={`text-[14px] ${photoTab ? "text-dpInk font-bold" : "text-dpText-secondary"}`}>
                   私藏
                 </span>
-                {totalListSaves > 0 && (
-                  <span
-                    className="text-[9px] px-1 py-px rounded-full font-medium"
-                    style={{ background: "#FFF0E5", color: "#E65000" }}
-                  >
-                    {totalListSaves}
-                  </span>
-                )}
                 {photoTab && (
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-[3px] rounded-full bg-dpOrange" />
                 )}
@@ -421,14 +439,19 @@ export default function Me() {
             </div>
           ) : (
           <>
-          {/* 草稿箱条 */}
-          <button className="w-full px-3 py-3 flex items-center gap-2 border-b border-[#f5f5f5]">
+          {/* 草稿箱条:近期打卡按类目自动归置(banner 推荐来源) */}
+          <button
+            onClick={() => setDraftBoxOpen(true)}
+            className="w-full px-3 py-3 flex items-center gap-2 border-b border-[#f5f5f5]"
+          >
             <div className="w-8 h-8 rounded-lg bg-[#FFF6E5] flex items-center justify-center text-base">
               📝
             </div>
             <div className="flex-1 text-left">
               <div className="text-[13px] text-dpInk">草稿箱</div>
-              <div className="text-[10px] text-dpText-tertiary mt-0.5">3 条未发布</div>
+              <div className="text-[10px] text-dpText-tertiary mt-0.5">
+                已按类目整理 {draftBox.length} 份待发布:{draftBox.map((d) => d.category).join(" / ")}
+              </div>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
               <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
@@ -514,6 +537,62 @@ export default function Me() {
       </div>
 
       <BottomTab navigate={navigate} active="me" />
+
+      {/* ── 草稿箱抽屉:按类目整理的待发布草稿,点「去整理」进编辑器 ── */}
+      <AnimatePresence>
+        {draftBoxOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setDraftBoxOpen(false)}
+              className="absolute inset-0 z-[100] bg-black/40"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 280 }}
+              className="absolute left-0 right-0 bottom-0 z-[101] bg-white rounded-t-3xl"
+              style={{ boxShadow: "0 -10px 40px rgba(0,0,0,0.15)" }}
+            >
+              <div className="pt-2.5 pb-1 flex justify-center">
+                <div className="w-11 h-1 rounded-full bg-[#e0e0e0]" />
+              </div>
+              <div className="px-5 pt-1 pb-2">
+                <div className="text-[16px] font-semibold text-dpInk">草稿箱</div>
+                <div className="text-[11px] text-dpText-tertiary mt-0.5">
+                  按类目把你近期去过的店整理好了,挑一份接着编
+                </div>
+              </div>
+              <div className="px-4 pb-8">
+                {draftBox.map((d) => (
+                  <button
+                    key={d.category}
+                    onClick={() => { setDraftBoxOpen(false); handleDraft(d); }}
+                    className="w-full py-3 flex items-center gap-3 border-b border-[#f5f5f5] last:border-0 text-left"
+                  >
+                    <div className="w-11 h-11 rounded-xl overflow-hidden bg-[#f0f0f0] shrink-0">
+                      <img src={d.items[0]?.photos?.[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-semibold text-dpInk">
+                        {d.category} · {d.items.length} 家店
+                      </div>
+                      <div className="text-[11px] text-dpText-tertiary mt-0.5 truncate">
+                        建议主题:「{d.suggestedTitle}」
+                      </div>
+                    </div>
+                    <span
+                      className="shrink-0 px-3 h-7 rounded-full text-[12px] text-white font-medium flex items-center"
+                      style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+                    >
+                      去整理
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
