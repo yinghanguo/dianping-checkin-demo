@@ -16,7 +16,7 @@
     {
       "name": "Vite Dev HTTP 5175",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "NO_SSL=1 npx vite --port 5175"],
+      "runtimeArgs": ["-c", "NO_SSL=1 npx vite --port 5175 --host 0.0.0.0"],
       "port": 5175
     },
     {

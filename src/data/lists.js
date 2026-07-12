@@ -7,10 +7,10 @@ import { SH_IMG, shPoi } from "./shanghaiStores";
 import { REAL_LISTS } from "./realLists";
 import nikiAvatar from "../assets/niki-avatar.svg";
 
-const STORAGE_KEY = "dp_lists_v6"; // v6:网球拆为三位创作者三份清单(支撑同主题推荐)
+const STORAGE_KEY = "dp_lists_v7"; // v7:创作者改名(JoJo/yzhuo/landy_js),升版让旧缓存种子失效
 const META_KEY = "dp_list_meta_v1";
 const LEGACY_ALBUM_KEY = "dp_albums";
-const LEGACY_LIST_KEYS = ["dp_lists_v5", "dp_lists_v4", "dp_lists_v3", "dp_lists_v2", "dp_lists_v1"];
+const LEGACY_LIST_KEYS = ["dp_lists_v6", "dp_lists_v5", "dp_lists_v4", "dp_lists_v3", "dp_lists_v2", "dp_lists_v1"];
 
 export const ME = {
   id: "me",

@@ -226,11 +226,12 @@ export const FRIEND_FEED = [
 // Story 数据:好友最近打卡(用于顶部 Story 行)
 // 未读的排前面
 export const FRIEND_STORIES = [
-  { friend: F("花花花花花"), unread: true, city: "杜布罗夫尼克", time: "19小时前", isTravel: true, photo: IMG.gelato, poi: "Peppino's Gelato Factory" },
-  { friend: F("Mori"), unread: true, city: "泉州", time: "5小时前", isTravel: true, photo: IMG.coffee1, poi: "余温手冲咖啡屋" },
-  { friend: F("艾伦没有派对"), unread: true, city: "德清", time: "昨天", isTravel: true, photo: IMG.noodle, poi: "程三合·三合鲜虾面" },
-  { friend: { id: "jojo", name: "JoJo", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=JoJo&backgroundColor=ffd5dc" }, unread: true, city: "首尔", time: "昨天", isTravel: true, photo: IMG.cafe1, poi: "Fritz Coffee" },
-  { friend: F("penguinking"), unread: true, city: "上海", time: "昨天", photo: IMG.coffee1, poi: "沪水焙煎室", isTravel: false },
+  // photos:同一人的多张图(Story 图片区上下滑切换;空白区上下滑切人)
+  { friend: F("花花花花花"), unread: true, city: "杜布罗夫尼克", time: "19小时前", isTravel: true, photo: IMG.gelato, photos: [IMG.gelato, IMG.dessert1, IMG.food2], poi: "Peppino's Gelato Factory" },
+  { friend: F("Mori"), unread: true, city: "泉州", time: "5小时前", isTravel: true, photo: IMG.coffee1, photos: [IMG.coffee1, IMG.coffee2, IMG.cafe2], poi: "余温手冲咖啡屋" },
+  { friend: F("艾伦没有派对"), unread: true, city: "德清", time: "昨天", isTravel: true, photo: IMG.noodle, photos: [IMG.noodle, IMG.food1], poi: "程三合·三合鲜虾面" },
+  { friend: { id: "jojo", name: "JoJo", avatar: "https://api.dicebear.com/9.x/notionists/svg?seed=JoJo&backgroundColor=ffd5dc" }, unread: true, city: "首尔", time: "昨天", isTravel: true, photo: IMG.cafe1, photos: [IMG.cafe1, IMG.dessert2, IMG.food4], poi: "Fritz Coffee" },
+  { friend: F("penguinking"), unread: true, city: "上海", time: "昨天", photo: IMG.coffee2, photos: [IMG.coffee2, IMG.cafe1], poi: "沪水焙煎室", isTravel: false },
   { friend: F("landy_js"), unread: false, city: "大阪", time: "昨天", photo: IMG.food2, poi: "一兰拉面" },
   { friend: F("JLRu"), unread: false, city: "上海", time: "2天前", photo: IMG.food1, poi: "甬府" },
   { friend: F("chang"), unread: false, city: "北京", time: "2天前", photo: IMG.food3, poi: "四季民福" },

@@ -197,17 +197,6 @@ export default function Search() {
           })}
         </div>
 
-        {/* ── 相关内容 ── */}
-        <div className="px-3 pt-4 pb-2">
-          <div className="text-[16px] font-bold text-dpInk mb-2.5">“南京西路”相关内容</div>
-          <div className="grid grid-cols-3 gap-1.5">
-            {[SH_IMG.fengshengli, SH_IMG.bco, SH_IMG.lighthouse].map((src, i) => (
-              <div key={i} className="rounded-lg overflow-hidden bg-[#f0f0f0]" style={{ aspectRatio: "3/4" }}>
-                <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

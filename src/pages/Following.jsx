@@ -40,6 +40,24 @@ export default function Following() {
   // 我的最近打卡(取最新 3 条) - localStorage
   const myRecentCheckins = useMemo(() => getUserCheckins().slice(0, 3), []);
 
+  // 单一时间线:把"我的打卡 / 好友评价 / 好友清单事件"按时间先后混排(不再分区)
+  const timeline = useMemo(() => {
+    // 相对时间文案 → 距今毫秒数(用于排序)
+    const rel = (t = "") => {
+      if (/刚刚/.test(t)) return 0;
+      let m = t.match(/(\d+)\s*分钟前/); if (m) return m[1] * 60e3;
+      m = t.match(/(\d+)\s*小时前/); if (m) return m[1] * 3600e3;
+      m = t.match(/(\d+)\s*天前/); if (m) return m[1] * 86400e3;
+      if (/昨天/.test(t)) return 1.2 * 86400e3;
+      return 30 * 86400e3;
+    };
+    return [
+      ...myRecentCheckins.map((c) => ({ kind: "mine", key: `m-${c.id}`, age: Date.now() - c.timestamp, data: c })),
+      ...LIST_EVENTS.map((ev, i) => ({ kind: "list", key: `l-${i}`, age: rel(ev.time), data: ev })),
+      ...FRIEND_FEED.map((it) => ({ kind: "feed", key: `f-${it.id}`, age: rel(it.time), data: it })),
+    ].sort((a, b) => a.age - b.age);
+  }, [myRecentCheckins]);
+
   // 前三名好友头像(mock:取 FRIENDS 列表前3)
   const top3 = FRIENDS.slice(0, 3);
 
@@ -109,7 +127,7 @@ export default function Following() {
         >
           <div className="text-2xl">🏆</div>
           <div className="flex-1 text-left">
-            <div className="text-[14px] font-medium text-dpInk">5 月好友打卡排行</div>
+            <div className="text-[14px] font-medium text-dpInk">7 月好友打卡排行</div>
             <div className="text-[11px] text-dpText-tertiary mt-0.5">看看谁是本月打卡王</div>
           </div>
           <div className="flex items-center gap-2">
@@ -132,51 +150,17 @@ export default function Following() {
         </button>
       </div>
 
-      {/* ── 我的动态(只在有自己的打卡记录时展示) ── */}
-      {myRecentCheckins.length > 0 && (
-        <div className="border-t-[6px] border-[#f5f5f5]">
-          <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <div className="w-1 h-3 bg-dpOrange rounded-full" />
-              <span className="text-[13px] font-semibold text-dpInk">
-                我的动态
-              </span>
-              <span className="text-[11px] text-dpText-tertiary">
-                · 最近 {myRecentCheckins.length} 条
-              </span>
-            </div>
-            <button
-              onClick={() => navigate("/footprint")}
-              className="text-[11px] text-dpText-tertiary flex items-center gap-0.5"
-            >
-              查看全部
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
-          {myRecentCheckins.map((c) => (
-            <MyCheckinCard key={c.id} checkin={c} onClick={() => navigate("/footprint")} />
-          ))}
-        </div>
-      )}
-
-      {/* ── 好友评价/打卡信息流 ── */}
-      {myRecentCheckins.length > 0 && (
-        <div className="border-t-[6px] border-[#f5f5f5] px-4 pt-3 pb-2 flex items-center gap-1.5">
-          <div className="w-1 h-3 bg-dpOrange rounded-full" />
-          <span className="text-[13px] font-semibold text-dpInk">好友动态</span>
-        </div>
-      )}
-      <div className="space-y-0">
-        {FRIEND_FEED.map((item, idx) => (
-          <React.Fragment key={item.id}>
-            <FeedCard item={item} />
-            {/* 好友清单动态穿插:第 1 条后、第 3 条后 */}
-            {idx === 0 && <ListEventCard event={LIST_EVENTS[0]} navigate={navigate} />}
-            {idx === 2 && <ListEventCard event={LIST_EVENTS[1]} navigate={navigate} />}
-          </React.Fragment>
-        ))}
+      {/* ── 动态(单一时间线:我的打卡、好友评价、好友清单事件按时间混排) ── */}
+      <div className="border-t-[6px] border-[#f5f5f5] space-y-0">
+        {timeline.map((entry) =>
+          entry.kind === "mine" ? (
+            <MyCheckinCard key={entry.key} checkin={entry.data} onClick={() => navigate("/footprint")} />
+          ) : entry.kind === "list" ? (
+            <ListEventCard key={entry.key} event={entry.data} navigate={navigate} />
+          ) : (
+            <FeedCard key={entry.key} item={entry.data} />
+          )
+        )}
       </div>
 
       {/* ── Story 全屏查看 ── */}
@@ -485,12 +469,65 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
     }
   };
 
+  // ── 双轴滑动:图片区上下滑 = 切同一人的多张图;空白区上下滑 = 切人 ──
+  const touchY = React.useRef(null);
+  const wheelLock = React.useRef(0);
+  const goPhoto = (dir) => {
+    setPhotoIdx((i) => Math.min(photos.length - 1, Math.max(0, i + dir)));
+  };
+  const swipeDelta = (e) => {
+    if (touchY.current == null) return 0;
+    const dy = e.changedTouches[0].clientY - touchY.current;
+    touchY.current = null;
+    return Math.abs(dy) >= 40 ? dy : 0;
+  };
+  const onZoneTouchStart = (e) => {
+    touchY.current = e.touches[0].clientY;
+  };
+  // 空白区:上滑下一个人,下滑上一个人
+  const onBlankTouchEnd = (e) => {
+    const dy = swipeDelta(e);
+    if (dy < 0) goNext();
+    else if (dy > 0) goPrev();
+  };
+  // 图片区:上滑下一张图,下滑上一张图(阻止冒泡到空白区)
+  const onPhotoTouchStart = (e) => {
+    e.stopPropagation();
+    touchY.current = e.touches[0].clientY;
+  };
+  const onPhotoTouchEnd = (e) => {
+    e.stopPropagation();
+    const dy = swipeDelta(e);
+    if (dy < 0) goPhoto(1);
+    else if (dy > 0) goPhoto(-1);
+  };
+  // 桌面滚轮同理(节流 400ms)
+  const wheelReady = () => {
+    const now = Date.now();
+    if (now - wheelLock.current < 400) return false;
+    wheelLock.current = now;
+    return true;
+  };
+  const onBlankWheel = (e) => {
+    if (!wheelReady()) return;
+    if (e.deltaY > 0) goNext();
+    else goPrev();
+  };
+  const onPhotoWheel = (e) => {
+    e.stopPropagation();
+    if (!wheelReady()) return;
+    goPhoto(e.deltaY > 0 ? 1 : -1);
+  };
+
   return (
     <motion.div
       key={storyIdx}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      onTouchStart={onZoneTouchStart}
+      onTouchEnd={onBlankTouchEnd}
+      onWheel={onBlankWheel}
       className="fixed inset-0 z-[200] bg-[#111] flex flex-col select-none"
     >
       {/* 顶部:头像 + 名字 + 时间 + 关闭 */}
@@ -542,6 +579,9 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
               onClick={handleImgClick}
+              onTouchStart={onPhotoTouchStart}
+              onTouchEnd={onPhotoTouchEnd}
+              onWheel={onPhotoWheel}
               className="relative w-full rounded-2xl overflow-hidden cursor-pointer"
               style={{ aspectRatio: "1/1", boxShadow: "0 8px 32px rgba(0,0,0,0.55)" }}
             >
@@ -621,62 +661,86 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
   );
 }
 
-// ── 好友清单动态卡:头像前置 + 四宫格封面 + 一句理由 ──
+// ── 好友清单动态卡(与发布内容同构:头部 → 文案 → 三宫格图 → 查看完整清单入口 → 操作栏) ──
 function ListEventCard({ event, navigate }) {
   const list = getList(event.listId);
   if (!list) return null;
-  const photos = list.items.map((it) => it.photo).slice(0, 4);
+  const photos = list.items.map((it) => it.photo).slice(0, 3);
+  const open = () => navigate(`/album/${list.id}`, { state: { src: "public" } });
   return (
-    <button
-      onClick={() => navigate(`/album/${list.id}`, { state: { src: "public" } })}
-      className="block w-full text-left px-4 py-4 border-b border-[#f5f5f5]"
-      style={{ background: "linear-gradient(180deg, #FFFBF6, #ffffff 60%)" }}
-    >
-      {/* 头部 */}
-      <div className="flex items-start gap-2.5 mb-2.5">
+    <div className="px-4 py-4 border-b border-[#f5f5f5]">
+      {/* 头部:头像 + 名字 + 动作 + 时间(同 FeedCard) */}
+      <div className="flex items-start gap-2.5 mb-2">
         <div className="w-10 h-10 rounded-full overflow-hidden bg-[#f5f5f5] shrink-0">
           <img src={list.owner.avatar} alt="" className="w-full h-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-[14px] font-semibold text-dpInk truncate">{list.owner.name}</span>
-            <span className="text-[9px] px-1 py-px rounded font-bold text-white shrink-0" style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}>
-              {list.owner.level}
+            <span
+              className="text-[9px] px-1 py-px rounded font-bold text-white shrink-0"
+              style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}
+            >
+              {list.owner.level?.replace(".", "") || "Lv7"}
             </span>
           </div>
-          <div className="text-[11px] mt-0.5" style={{ color: "#E65000" }}>
-            {event.action}
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="text-[11px]" style={{ color: "#E65000" }}>{event.action}</span>
           </div>
         </div>
         <span className="text-[11px] text-dpText-tertiary shrink-0">{event.time}</span>
       </div>
 
-      {/* 清单体 */}
-      <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #FFE8D0" }}>
-        <div className="grid grid-cols-4 gap-px bg-white">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="bg-[#f0f0f0] overflow-hidden" style={{ aspectRatio: "1/1" }}>
-              {photos[i % photos.length] && (
-                <img src={photos[i % photos.length]} alt="" className="w-full h-full object-cover" loading="lazy" />
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="px-3 py-2.5" style={{ background: "#FFFAF4" }}>
-          <div className="flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2.5">
+      {/* 文案(清单简介/标题) */}
+      <div className="mb-2">
+        <span className="text-[14px] text-dpInk leading-relaxed">
+          「{list.title}」{list.description ? ` ${list.description}` : ""}
+        </span>
+      </div>
+
+      {/* 照片(3列网格,同 FeedCard) */}
+      <div className="mb-2 gap-1 grid grid-cols-3">
+        {photos.map((ph, i) => (
+          <button key={i} onClick={open} className="rounded-lg overflow-hidden bg-[#f0f0f0]" style={{ aspectRatio: "1/1" }}>
+            <img src={ph} alt="" className="w-full h-full object-cover" loading="lazy" />
+          </button>
+        ))}
+      </div>
+
+      {/* 查看完整清单入口(同 POI 卡样式) */}
+      <button
+        onClick={open}
+        className="w-full rounded-xl p-2.5 flex items-center gap-2.5 mb-2 text-left"
+        style={{ background: "#FFFAF4", border: "1px solid #FFE8D0" }}
+      >
+        <img src={list.cover || photos[0]} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2.5">
               <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
             </svg>
-            <span className="text-[14px] font-bold text-dpInk truncate">{list.title}</span>
+            <span className="text-[13px] font-semibold text-dpInk truncate">{list.title}</span>
           </div>
-          <div className="text-[11px] text-dpText-secondary mt-1 truncate">
-            “{list.items[0]?.reason}”
-          </div>
-          <div className="text-[10.5px] text-dpText-tertiary mt-1">
-            {list.items.length} 家店 · 🔖 {list.saveCount} · ♡ {list.likeCount}
+          <div className="text-[10px] text-dpText-tertiary mt-0.5">
+            {list.items.length} 家店 · 🔖 {list.saveCount} 人收藏
           </div>
         </div>
+        <span className="shrink-0 text-[11px] font-medium flex items-center gap-0.5" style={{ color: "#E65000" }}>
+          查看完整清单
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      {/* 底部操作栏(同 FeedCard) */}
+      <div className="flex items-center justify-between text-[12px] text-dpText-tertiary pt-1">
+        <button className="flex items-center gap-1"><span>···</span></button>
+        <div className="flex items-center gap-4">
+          <button className="flex items-center gap-1">💬 评论</button>
+          <button className="flex items-center gap-1">♡ 点赞 {list.likeCount}</button>
+        </div>
       </div>
-    </button>
+    </div>
   );
 }
