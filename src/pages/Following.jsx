@@ -33,7 +33,18 @@ function relativeTime(ts) {
 // 结构:Story 行 → Banner(好友打卡排行) → 好友评价信息流
 export default function Following() {
   const navigate = useNavigate();
-  const [readStories, setReadStories] = useState(new Set());
+  // 已读状态跨"切页返回"持久化(sessionStorage);挂载时读一次作为"冻结排序"的依据
+  const READ_KEY = "dp_story_read";
+  const initialRead = useMemo(() => {
+    try { return new Set(JSON.parse(sessionStorage.getItem(READ_KEY)) || []); } catch { return new Set(); }
+  }, []);
+  const [readStories, setReadStories] = useState(initialRead);
+  const markRead = (id) =>
+    setReadStories((prev) => {
+      const next = new Set(prev); next.add(id);
+      try { sessionStorage.setItem(READ_KEY, JSON.stringify([...next])); } catch { /* ignore */ }
+      return next;
+    });
   const [activeStoryIdx, setActiveStoryIdx] = useState(null);
 
   // 我的最近打卡(取最新 3 条) - localStorage
@@ -60,18 +71,21 @@ export default function Following() {
   // 前三名好友头像(mock:取 FRIENDS 列表前3)
   const top3 = FRIENDS.slice(0, 3);
 
-  // Story 排序:未读优先
-  const sortedStories = [...FRIEND_STORIES].sort((a, b) => {
-    const aRead = readStories.has(a.friend.id);
-    const bRead = readStories.has(b.friend.id);
-    if (aRead !== bRead) return aRead ? 1 : -1;
-    return 0;
-  });
+  // Story 顺序在"挂载时"冻结一次(未读优先);读一条只改圈的已读态、不即时重排,
+  // 切到别的页再回来(组件重挂载)时,才按最新已读态把没看过的往前靠
+  const sortedStories = useMemo(() => {
+    return [...FRIEND_STORIES].sort((a, b) => {
+      const aRead = initialRead.has(a.friend.id) || !a.unread;
+      const bRead = initialRead.has(b.friend.id) || !b.unread;
+      if (aRead !== bRead) return aRead ? 1 : -1;
+      return 0;
+    });
+  }, [initialRead]);
 
   const handleStoryClick = (story) => {
     const idx = sortedStories.findIndex((st) => st.friend.id === story.friend.id);
     setActiveStoryIdx(idx >= 0 ? idx : 0);
-    setReadStories((prev) => new Set([...prev, story.friend.id]));
+    markRead(story.friend.id);
   };
 
   return (
@@ -169,7 +183,7 @@ export default function Following() {
             stories={sortedStories}
             initialIdx={activeStoryIdx}
             onClose={() => setActiveStoryIdx(null)}
-            onRead={(id) => setReadStories((prev) => new Set([...prev, id]))}
+            onRead={(id) => markRead(id)}
           />
         )}
       </AnimatePresence>
