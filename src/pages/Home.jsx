@@ -65,9 +65,9 @@ export default function Home() {
   return (
     <div className="absolute inset-0 bg-white flex flex-col">
 
-      {/* ── 顶部 Tab 栏 ── */}
+      {/* ── 顶部 Tab 栏(pt 给红点留出空间,避免被横滑容器裁剪) ── */}
       <div className="px-3 pt-4 pb-1 bg-white flex items-center gap-0">
-        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar flex-1">
+        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar flex-1 pt-1.5">
           <button
             onClick={() => setTopTab("following")}
             className={`shrink-0 text-[16px] pb-1 relative ${
@@ -77,7 +77,7 @@ export default function Home() {
             好友
             {/* 好友有更新时的红点提示 */}
             {topTab !== "following" && FRIEND_STORIES.some((s) => s.unread) && (
-              <span className="absolute -top-0.5 -right-1.5 w-1.5 h-1.5 rounded-full bg-[#FF3B30]" />
+              <span className="absolute top-0 -right-2 w-1.5 h-1.5 rounded-full bg-[#FF3B30]" />
             )}
             {topTab === "following" && (
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-[3px] bg-dpOrange rounded-full" />

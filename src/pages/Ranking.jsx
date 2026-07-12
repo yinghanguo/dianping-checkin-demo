@@ -1,4 +1,4 @@
-import nikiAvatar from "../assets/niki-avatar.svg";
+import { NIKI_AVATAR as nikiAvatar } from "../data/lists";
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -109,7 +109,7 @@ export default function Ranking() {
           <div className="w-11 h-11 rounded-full overflow-hidden bg-[#f5f5f5] shrink-0">
             <img
               src={nikiAvatar}
-              alt="" className="w-full h-full"
+              alt="" className="w-full h-full object-cover"
             />
           </div>
           <div className="flex-1">

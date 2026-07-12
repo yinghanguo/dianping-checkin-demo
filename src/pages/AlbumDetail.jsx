@@ -7,12 +7,10 @@ import {
   updateList,
   getListMeta,
   setListMeta,
-  toggleCheckOff,
   publicEligibility,
   getPublicListsOf,
   getSameThemeLists,
   effectiveCheckedOff,
-  iHaveBeenTo,
 } from "../data/lists";
 import { MY_CHECKINS } from "../data/myCheckins";
 import ListMap from "../components/ListMap";
@@ -81,10 +79,6 @@ export default function AlbumDetail() {
     showToast(next ? "已同步到 收藏·我的专辑 · 更新时会提醒你 🔔" : "已取消收藏");
   };
 
-  const handleCheckOff = (poiName) => {
-    toggleCheckOff(id, poiName);
-    setTick((t) => t + 1);
-  };
 
   const handlePublish = () => {
     updateList({ ...list, visibility: "public" });
@@ -273,24 +267,26 @@ export default function AlbumDetail() {
                       <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
-                  {/* 拔草勾选(收藏者);打卡过的店自动勾选,不可取消 */}
+                  {/* 拔草状态(收藏者):纯由打卡/评价/消费行为自动判定,不可手动勾选 */}
                   {!isMine && meta.saved && (
-                    <button
-                      onClick={() =>
-                        iHaveBeenTo(item.poi.name)
-                          ? showToast("这家你打过卡，自动算去过 ✓")
-                          : handleCheckOff(item.poi.name)
-                      }
-                      className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center border-2 transition-all ${
-                        checked ? "border-[#7BC142] bg-[#7BC142]" : "border-[#ddd] bg-white"
-                      }`}
-                    >
-                      {checked && (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                    checked ? (
+                      <span
+                        className="shrink-0 flex items-center gap-0.5 px-1.5 h-6 rounded-full text-[10px] font-medium"
+                        style={{ background: "#EAF7E0", color: "#4E9A2A" }}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4E9A2A" strokeWidth="3">
                           <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                      )}
-                    </button>
+                        去过
+                      </span>
+                    ) : (
+                      <span
+                        className="shrink-0 px-1.5 h-6 rounded-full text-[10px] flex items-center"
+                        style={{ background: "#F5F5F5", color: "#bbb" }}
+                      >
+                        未去过
+                      </span>
+                    )
                   )}
                 </div>
 

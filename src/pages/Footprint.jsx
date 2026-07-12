@@ -1,4 +1,4 @@
-import nikiAvatar from "../assets/niki-avatar.svg";
+import { NIKI_AVATAR as nikiAvatar } from "../data/lists";
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -621,7 +621,7 @@ function FriendCheckinRanking() {
     data.push({
       id: "niki",
       name: "Niki",
-      avatar: {nikiAvatar},
+      avatar: nikiAvatar,
       count: 14,
       isMe: true,
     });
@@ -664,7 +664,7 @@ function FriendCheckinRanking() {
         <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border-2 border-dpOrange">
           <img
             src={nikiAvatar}
-            alt="" className="w-full h-full"
+            alt="" className="w-full h-full object-cover"
           />
         </div>
         <div className="flex-1">

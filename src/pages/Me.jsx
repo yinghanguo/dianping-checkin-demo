@@ -1,4 +1,4 @@
-import nikiAvatar from "../assets/niki-avatar.svg";
+import { NIKI_AVATAR as nikiAvatar } from "../data/lists";
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -94,7 +94,7 @@ export default function Me() {
                 <img
                   src={nikiAvatar}
                   alt=""
-                  className="w-full h-full"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>
@@ -308,7 +308,7 @@ export default function Me() {
               ))}
               <button
                 onClick={() => setPhotoTab(true)}
-                className="pb-2 relative flex items-center gap-0.5"
+                className="pb-2 relative"
               >
                 <span className={`text-[14px] ${photoTab ? "text-dpInk font-bold" : "text-dpText-secondary"}`}>
                   私藏
@@ -338,6 +338,25 @@ export default function Me() {
                   <path d="M12 5v14M5 12h14" strokeLinecap="round" />
                 </svg>
                 新建私藏清单
+              </button>
+
+              {/* 草稿箱条:近期打卡按类目自动归置(私藏创作入口) */}
+              <button
+                onClick={() => setDraftBoxOpen(true)}
+                className="w-full mb-3 px-3 py-2.5 flex items-center gap-2 rounded-xl bg-[#FFFAF3] border border-[#FFE8D0]"
+              >
+                <div className="w-8 h-8 rounded-lg bg-[#FFF6E5] flex items-center justify-center text-base shrink-0">
+                  📝
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="text-[13px] text-dpInk">草稿箱</div>
+                  <div className="text-[10px] text-dpText-tertiary mt-0.5 truncate">
+                    已按类目整理 {draftBox.length} 份待发布:{draftBox.map((d) => d.category).join(" / ")}
+                  </div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" className="shrink-0">
+                  <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
 
               <div className="grid grid-cols-2 gap-2.5">
@@ -423,25 +442,6 @@ export default function Me() {
             </div>
           ) : (
           <>
-          {/* 草稿箱条:近期打卡按类目自动归置(banner 推荐来源) */}
-          <button
-            onClick={() => setDraftBoxOpen(true)}
-            className="w-full px-3 py-3 flex items-center gap-2 border-b border-[#f5f5f5]"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[#FFF6E5] flex items-center justify-center text-base">
-              📝
-            </div>
-            <div className="flex-1 text-left">
-              <div className="text-[13px] text-dpInk">草稿箱</div>
-              <div className="text-[10px] text-dpText-tertiary mt-0.5">
-                已按类目整理 {draftBox.length} 份待发布:{draftBox.map((d) => d.category).join(" / ")}
-              </div>
-            </div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2">
-              <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-
           {/* 内容瀑布流(双列) */}
           <div className="grid grid-cols-2 gap-2 px-2 py-2">
             {allCheckins.slice(0, 8).map((c) => (
@@ -685,33 +685,35 @@ export function BottomTab({ navigate, active = "home" }) {
   );
 }
 
-// ── banner 轮播:横滑 + 每 2 秒自动轮播(私藏杯活动位与草稿引导共用 banner 位) ──
+// ── banner 轮播:一直从右向左无缝轮播(末尾克隆首张实现正向循环),slide 间留间距 ──
 function BannerCarousel({ slides }) {
   const scroller = React.useRef(null);
   const [idx, setIdx] = useState(0);
   const count = slides.length;
+  // 末尾追加首张克隆:滚到克隆后静默跳回真实首张,保证方向始终右→左
+  const loopSlides = count > 1 ? [...slides, slides[0]] : slides;
 
   React.useEffect(() => {
     if (count <= 1) return;
     const timer = setInterval(() => {
       setIdx((prev) => {
-        const next = (prev + 1) % count;
+        const next = prev + 1;
         const el = scroller.current;
         if (el) el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
+        if (next >= count) {
+          setTimeout(() => {
+            const e2 = scroller.current;
+            if (e2) e2.scrollTo({ left: 0, behavior: "auto" });
+            setIdx(0);
+          }, 480);
+        }
         return next;
       });
-    }, 2000);
+    }, 2800);
     return () => clearInterval(timer);
   }, [count]);
 
   if (count === 0) return null;
-
-  const handleScroll = () => {
-    const el = scroller.current;
-    if (!el) return;
-    const cur = Math.round(el.scrollLeft / el.clientWidth);
-    if (cur !== idx) setIdx(cur);
-  };
 
   return (
     <motion.div
@@ -722,12 +724,12 @@ function BannerCarousel({ slides }) {
     >
       <div
         ref={scroller}
-        onScroll={handleScroll}
         className="flex overflow-x-auto no-scrollbar"
         style={{ scrollSnapType: "x mandatory" }}
       >
-        {slides.map((s, i) => (
-          <div key={i} className="w-full shrink-0" style={{ scrollSnapAlign: "center" }}>
+        {loopSlides.map((s, i) => (
+          // px 给相邻 banner 之间留出间距(滑动时可见)
+          <div key={i} className="w-full shrink-0 px-1" style={{ scrollSnapAlign: "center" }}>
             {s}
           </div>
         ))}
@@ -739,9 +741,9 @@ function BannerCarousel({ slides }) {
               key={i}
               className="rounded-full transition-all"
               style={{
-                width: i === idx ? 10 : 4,
+                width: (idx % count) === i ? 10 : 4,
                 height: 4,
-                background: i === idx ? "#FF6F00" : "#ddd",
+                background: (idx % count) === i ? "#FF6F00" : "#ddd",
               }}
             />
           ))}

@@ -254,17 +254,11 @@ export default function Collection() {
 
       {/* ── 底部浮动按钮:一键导入 | 创建专辑 ── */}
       {topTab === 0 && albumTab === "mine" && (
-        <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-3 px-6" style={{ zIndex: 30 }}>
-          <button
-            className="flex-1 h-11 rounded-full bg-white text-[14px] font-medium text-dpInk"
-            style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.12)", maxWidth: 150 }}
-          >
-            一键导入
-          </button>
+        <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center px-6" style={{ zIndex: 30 }}>
           <button
             onClick={() => navigate("/album/create")}
-            className="flex-1 h-11 rounded-full text-white text-[14px] font-medium"
-            style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)", boxShadow: "0 4px 16px rgba(255,111,0,0.35)", maxWidth: 170 }}
+            className="h-11 px-10 rounded-full text-white text-[14px] font-medium"
+            style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)", boxShadow: "0 4px 16px rgba(255,111,0,0.35)" }}
           >
             创建专辑
           </button>

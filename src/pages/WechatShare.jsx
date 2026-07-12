@@ -1,4 +1,4 @@
-import nikiAvatar from "../assets/niki-avatar.svg";
+import { NIKI_AVATAR as nikiAvatar } from "../data/lists";
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
