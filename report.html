@@ -240,7 +240,7 @@
   <div class="nav-inner">
     <div class="nav-logo">私藏好店<span>产品汇报</span></div>
     <div class="nav-links">
-      <a href="#s1">机会</a><a href="#s2">定义</a><a href="#s3">路径</a><a href="#s4">增长</a><a href="#s5">风险</a><a href="#s6">命名</a><a href="#s7">里程碑</a><a href="#s8">指标</a>
+      <a href="#s1">机会</a><a href="#s2">定义</a><a href="#snow">现状</a><a href="#s3">路径</a><a href="#s4">增长</a><a href="#spk">私藏杯</a><a href="#s5">风险</a><a href="#s6">命名</a><a href="#s7">里程碑</a><a href="#s8">指标</a>
     </div>
   </div>
 </nav>
@@ -253,7 +253,7 @@
     私藏好店的本质，是把点评的信任资产从<strong>"店的评分"</strong>扩展到<strong>"人的品味"</strong>。<br>
     评价回答"这家店怎么样"，私藏好店回答"<strong>这个人会带你去哪</strong>"。
   </div>
-  <div class="hero-meta">产品计划书 V1.1 · 2026 年 7 月</div>
+  <div class="hero-meta">产品计划书 V2.0（产品 + 增长合本）· 2026 年 7 月</div>
   <div style="margin-top: 18px;">
     <a href="https://yinghanguo.github.io/dianping-checkin-demo/" target="_blank"
        style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 26px; border-radius: 999px; background: var(--orange); color: #fff; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 6px 20px rgba(255,102,51,.35);">
@@ -335,10 +335,38 @@
   </div>
 </section>
 
-<!-- ============ 03 路径 ============ -->
+<!-- ============ 03 产品现状 ============ -->
+<section id="snow">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">03</span><span class="sec-title">产品现状</span></div>
+    <div class="sec-sub">可交互原型已落地的形态 —— 下文的路径与增长都建立在此</div>
+  </div>
+  <div class="grid g3 reveal">
+    <div class="card">
+      <div class="badge">存放 · 已跑通</div>
+      <h4>一个对象，三种状态</h4>
+      <p>收藏页即「专辑」Tab（我的专辑 / 我收藏的）。收藏 → 私密专辑 → 补理由 + 公开 = <span class="k">私藏清单</span>，三态连续，不新建体系。</p>
+    </div>
+    <div class="card">
+      <div class="badge">创作 · 摊进日常</div>
+      <h4>草稿箱 + 自动代入</h4>
+      <p>把近期打卡按类目自动归置成待整理草稿（"咖啡 9 家…"），个人页 banner 推荐即来自这里；自己发布过的照片与理由<span class="k">自动代入</span>，<b>无 AI 代写</b>。</p>
+    </div>
+    <div class="card">
+      <div class="badge">消费 · 去过=行为</div>
+      <h4>拔草不靠手填</h4>
+      <p>「去过 / 拔草」进度纯由<span class="k">真实打卡 / 评价 / 消费</span>自动判定，禁止手动勾选——让"真实去过"成为可信的分发加权信号。</p>
+    </div>
+  </div>
+  <div class="callout reveal" style="margin-top: 20px;">
+    <strong>六大分发触点已接通：</strong>店页「被收录」+「打卡即助攻」角标 · 搜索结果清单/笔记混排 · 信息流 &amp; 好友页清单动态事件 · 首页「附近」分发附近清单 · 地图三态（私藏图层 → 查看门店 → 落图）· 站外微信卡。<span class="dim">增长活动「私藏杯」主会场亦已进原型（见第六节）。</span>
+  </div>
+</section>
+
+<!-- ============ 04 路径 ============ -->
 <section id="s3">
   <div class="reveal">
-    <div class="sec-head"><span class="sec-num">03</span><span class="sec-title">产品路径设计</span></div>
+    <div class="sec-head"><span class="sec-num">04</span><span class="sec-title">产品路径设计</span></div>
     <div class="sec-sub">创作 · 分发 · 存放</div>
   </div>
 
@@ -369,7 +397,7 @@
       <tr><td><b>搜索结果页</b></td><td>店铺结果中穿插清单卡片</td><td>命中高决策成本场景——用户要的不是排序，是"一个靠谱的人替我选好"</td></tr>
       <tr><td><b>信息流</b></td><td>清单卡片、"好友更新了私藏"事件</td><td>品味浏览与关系链消费</td></tr>
       <tr><td><b>好友列表 / 主页</b></td><td>「TA 的私藏」一级入口</td><td>人 → 店路径的起点</td></tr>
-      <tr><td><b>地图</b><span class="dim">（V1.1 新增）</span></td><td>「私藏」图层（与必吃榜并列）：热门门店 pin 追加收录标记 → 底部清单列表 → 点选后清单门店连成路线上图</td><td>信息流分发内容，地图分发<b>决策</b>；清单在地图上变成"可以走的路线"，从决策工具升级为行动工具</td></tr>
+      <tr><td><b>地图</b></td><td>「私藏」图层（与必吃榜并列）：热门门店 pin 追加收录标记 → 底部清单列表「查看门店」→ 该清单门店落图连成路线</td><td>信息流分发内容，地图分发<b>决策</b>；清单在地图上变成"可以走的路线"，从决策工具升级为行动工具</td></tr>
       <tr><td><b>站外分享</b></td><td>精致的微信卡片</td><td>"发我你那个清单"是已存在的真实需求，最便宜的外部增长</td></tr>
     </table>
   </div>
@@ -394,7 +422,7 @@
 <!-- ============ 04 增长 ============ -->
 <section id="s4">
   <div class="reveal">
-    <div class="sec-head"><span class="sec-num">04</span><span class="sec-title">用户与增长</span></div>
+    <div class="sec-head"><span class="sec-num">05</span><span class="sec-title">用户与增长</span></div>
     <div class="sec-sub">创作金字塔 · 冷启动 · 规模化飞轮</div>
   </div>
 
@@ -435,10 +463,54 @@
   </div>
 </section>
 
-<!-- ============ 05 风险 ============ -->
+<!-- ============ 06 增长引擎 · 私藏杯 ============ -->
+<section id="spk">
+  <div class="reveal">
+    <div class="sec-head"><span class="sec-num">06</span><span class="sec-title">增长引擎 · 私藏杯</span></div>
+    <div class="sec-sub">把运营活动作为分发期的核心增长手段，而非附加的市场活动</div>
+  </div>
+
+  <div class="callout reveal" style="border-left-color: var(--orange-deep);">
+    清单产品有个先天死结：<strong>没人看 → 没人写，没人写 → 没人看。</strong>日常运营解不开，一场有赛程、要用脚投票的城市比赛可以——它在同一窗口里同时点燃供给、消费与关系。
+  </div>
+
+  <div class="grid g3 reveal">
+    <div class="card"><div class="badge">供给</div><p>报名门槛 = 公开门槛，活动本身就是一次<span class="k">全城清单质量大扫除</span>。</p></div>
+    <div class="card"><div class="badge">消费</div><p>收藏清单 → 照着去打卡 → 打卡就是给创作者助攻，消费第一次有了<span class="k">"参与一场比赛"</span>的意义。</p></div>
+    <div class="card"><div class="badge">关系</div><p>收藏了参赛清单的用户，就是 Phase 3「订阅—更新」循环的<span class="k">第一批种子</span>。</p></div>
+  </div>
+
+  <h3 style="margin: 44px 0 16px; font-size: 20px;" class="reveal">玩法核心：种草—拔草结算制</h3>
+  <div class="reveal">
+    <div class="flywheel">
+      <div class="fw-step"><div class="n">1</div><b>提报</b><span>创作者限期提报清单，挂一个商圈/主题灵感标签</span></div>
+      <div class="fw-step"><div class="n">2</div><b>种草</b><span>开赛 3 周，用户收藏 · 投票</span></div>
+      <div class="fw-step"><div class="n">3</div><b>拔草</b><span>收藏后照着去，真实到店打卡</span></div>
+      <div class="fw-step"><div class="n">4</div><b>结算</b><span>以「收藏用户的真实到店打卡数」决出打卡王</span></div>
+    </div>
+    <div class="fw-loop">↻ 冠军由行为决出，不由票数决出——别吵了，用脚投票</div>
+  </div>
+
+  <div class="grid g2 reveal" style="margin-top: 24px;">
+    <div class="card">
+      <h4>计分防操纵</h4>
+      <p>人×店去重 · 每人每清单封顶 3 家 · 单店占比 ≤40% · 打卡须发生在收藏之后——保证归因方向是<span class="k">"清单把人带到店"</span>。商圈（55）/ 主题（18）只作灵感标签，不划赛道，全员参赛设授奖线兜底。</p>
+    </div>
+    <div class="card" style="background: var(--orange-soft); border-color: transparent;">
+      <h4>奖励只给荣誉、分发与体验，<span class="k">不给现金</span></h4>
+      <p>打卡王：冠军徽章 + 2 周分发加权 + 官方共创；全场奖上体验型重奖（人气王＝Asia's 50 香港之旅、黑马奖＝黑珍珠三钻双人餐）；用户侧投票零奖励、打卡阶梯抽奖、伯乐奖。<b>零冠名、零商户赞助</b>——直接护住"商业化污染信任"这一最大风险。</p>
+    </div>
+  </div>
+
+  <div class="callout reveal" style="margin-top: 24px;">
+    <strong>与节奏咬合：</strong>私藏杯是 <b>Phase 2 的引爆点</b>（把分发效率与信任耐受度在真实流量下压测一次）；其沉淀的"收藏—打卡"归因管道，赛后即成为<span class="k">「经清单到店」</span>的常规指标，并把种子关系交棒给 <b>Phase 3 的订阅—更新循环</b>。
+  </div>
+</section>
+
+<!-- ============ 07 风险 ============ -->
 <section id="s5">
   <div class="reveal">
-    <div class="sec-head"><span class="sec-num">05</span><span class="sec-title">风险与对策</span></div>
+    <div class="sec-head"><span class="sec-num">07</span><span class="sec-title">风险与对策</span></div>
     <div class="sec-sub">按严重程度排序</div>
   </div>
 
@@ -479,7 +551,7 @@
 <!-- ============ 06 命名 ============ -->
 <section id="s6">
   <div class="reveal">
-    <div class="sec-head"><span class="sec-num">06</span><span class="sec-title">产品命名</span></div>
+    <div class="sec-head"><span class="sec-num">08</span><span class="sec-title">产品命名</span></div>
     <div class="sec-sub">个人主页入口：「TA 的私藏」</div>
   </div>
   <div class="name-hero reveal">
@@ -508,8 +580,8 @@
 <!-- ============ 07 里程碑 ============ -->
 <section id="s7">
   <div class="reveal">
-    <div class="sec-head"><span class="sec-num">07</span><span class="sec-title">里程碑规划</span></div>
-    <div class="sec-sub">三阶段，各验证一件事</div>
+    <div class="sec-head"><span class="sec-num">09</span><span class="sec-title">里程碑规划</span></div>
+    <div class="sec-sub">三阶段，各验证一件事 · Phase 1–2 能力已在原型演示，私藏杯是 Phase 2 引爆点</div>
   </div>
   <div class="timeline reveal">
     <div class="tl-item">
@@ -522,22 +594,21 @@
       <div class="goal">验证创作漏斗：收藏 → 私密清单 → 公开清单的转化率</div>
     </div>
     <div class="tl-item">
-      <h4>Phase 2 · 分发期<small>1–2 个月</small></h4>
+      <h4>Phase 2 · 分发期 + 活动引爆<small>1–2 个月</small></h4>
       <ul>
-        <li>门店详情页清单模块 +「被 N 份私藏收录」</li>
-        <li>搜索结果页清单卡片穿插（先约会 / 宴请 / 深夜食堂等高决策品类）</li>
-        <li>微信分享卡片；种子城市 KOC 邀请计划与官方共创标杆清单</li>
+        <li>六大分发触点全量：店页收录 +「打卡即助攻」、搜索混排、信息流 / 好友页清单事件、附近、地图三态、微信分享</li>
+        <li><b>私藏杯 · 城市站活动</b>（种子城市上海）：种草—拔草结算制 + 分阶段 banner 投放 + KOC 邀请与官方共创</li>
       </ul>
-      <div class="goal">验证分发效率：清单卡片点击率、清单到店转化</div>
+      <div class="goal">验证分发效率 + 活动引爆力：清单到店转化、提报量、拔草率</div>
     </div>
     <div class="tl-item">
       <h4>Phase 3 · 循环期<small>2–3 个月</small></h4>
       <ul>
-        <li>清单订阅与更新召回、"拔草"勾选机制</li>
-        <li>信息流清单卡片与好友关系链事件</li>
-        <li>反作弊体系（真实去过加权、商业密度识别）全量；城市复制</li>
+        <li>清单订阅与更新召回（承接私藏杯沉淀的"收藏—订阅"种子关系）</li>
+        <li>反作弊全量（真实到店加权、商业密度 / 商户合谋识别）</li>
+        <li>城市复制 + 私藏杯第二期（守擂制 / 城市德比）</li>
       </ul>
-      <div class="goal">验证"订阅—更新"循环对留存的拉动</div>
+      <div class="goal">验证"订阅—更新"循环对留存的拉动，与活动模型的可复制性</div>
     </div>
   </div>
 </section>
@@ -545,7 +616,7 @@
 <!-- ============ 08 指标 ============ -->
 <section id="s8">
   <div class="reveal">
-    <div class="sec-head"><span class="sec-num">08</span><span class="sec-title">指标体系</span></div>
+    <div class="sec-head"><span class="sec-num">10</span><span class="sec-title">指标体系</span></div>
     <div class="sec-sub">北极星指标：周活跃清单消费用户数（浏览 / 收藏 / 订阅清单的去重用户）</div>
   </div>
   <div class="tbl-wrap reveal">
@@ -554,20 +625,22 @@
       <tr><td><b>供给</b></td><td>公开清单渗透率（发布用户 / MAU）、人均清单数、清单月更新率</td></tr>
       <tr><td><b>分发</b></td><td>店页 / 搜索清单模块曝光点击率、清单 → 门店页转化率</td></tr>
       <tr><td><b>消费</b></td><td>清单收藏 / 订阅数、更新召回打开率、"拔草"回访率</td></tr>
-      <tr><td><b>信任</b></td><td>商业清单举报率、"真实去过"覆盖率</td></tr>
+      <tr class="hl"><td><b>增长（活动）</b></td><td>提报清单数与达标率、参赛清单收藏 UV、<b>有效拔草打卡数 / 拔草率</b>、拉票卡站外回流占比、赛后 30 天参赛清单更新率</td></tr>
+      <tr><td><b>信任</b></td><td>商业清单举报率、"真实去过"覆盖率、活动无效打卡剔除率（逐轮公示）</td></tr>
       <tr><td><b>大盘</b></td><td>决策渗透（经清单到店的决策占比）、次月留存增量，<span class="dim">最后才是 DAU</span></td></tr>
     </table>
   </div>
 
   <div class="final reveal">
     <div class="final-tag">一句话收拢</div>
-    这个产品成立的前提，是点评愿意把一部分<b>"店的流量"</b>让渡给<b>"人"</b>。私藏好店能不能成，产品设计只占一半，另一半取决于分发上是否真的敢在门店页和搜索里给清单留出一级位置——如果只是加一个藏得很深的新功能，它会变成又一个收藏夹。
+    这个产品成立的前提，是点评愿意把一部分<b>"店的流量"</b>让渡给<b>"人"</b>。私藏好店能不能成，产品设计只占一半，另一半取决于分发上是否真的敢在门店页和搜索里给清单留出一级位置——如果只是加一个藏得很深的新功能，它会变成又一个收藏夹。<br><br>
+    而让它"活过来"的那把火，是<b style="color:var(--orange-deep);">私藏杯</b>：产品把"人 → 店"的路铺好，活动让全城在同一周里真的走上这条路。只要守住两条底线——<b>票是真的、清单是干净的</b>——这场比赛就会替产品回答那个最关键的问题：人的品味，到底能不能把人带到店里去。
   </div>
 </section>
 
 </main>
 
-<footer>私藏好店 · 产品计划书 V1.1 · 2026 年 7 月 · <a href="https://yinghanguo.github.io/dianping-checkin-demo/" target="_blank" style="color: var(--orange-deep);">可交互原型</a></footer>
+<footer>私藏好店 · 产品计划书 V2.0（产品 + 增长合本）· 2026 年 7 月 · <a href="https://yinghanguo.github.io/dianping-checkin-demo/" target="_blank" style="color: var(--orange-deep);">可交互原型</a></footer>
 
 <script>
   // scroll progress
