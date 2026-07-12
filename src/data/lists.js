@@ -5,7 +5,9 @@
 import { MY_CHECKINS } from "./myCheckins";
 import { SH_IMG, shPoi } from "./shanghaiStores";
 import { REAL_LISTS } from "./realLists";
-import nikiAvatar from "../assets/niki-avatar.svg";
+
+// Niki 风格化头像(dicebear notionists,与好友头像统一风格)
+export const NIKI_AVATAR = "https://api.dicebear.com/9.x/notionists/svg?seed=Niki&backgroundColor=ffd5dc";
 
 const STORAGE_KEY = "dp_lists_v7"; // v7:创作者改名(JoJo/yzhuo/landy_js),升版让旧缓存种子失效
 const META_KEY = "dp_list_meta_v1";
@@ -15,7 +17,7 @@ const LEGACY_LIST_KEYS = ["dp_lists_v6", "dp_lists_v5", "dp_lists_v4", "dp_lists
 export const ME = {
   id: "me",
   name: "Niki",
-  avatar: nikiAvatar,
+  avatar: NIKI_AVATAR,
   level: "Lv.8",
 };
 
@@ -571,14 +573,14 @@ export function getSavedLists() {
   return loadLists().filter((l) => l.owner?.id !== "me" && meta[l.id]?.saved);
 }
 
-// 我的拔草进度(唯一口径,所有页面共用):手动勾选 ∪ 我的真实打卡
-// —— 打卡过的店自动算去过,避免"顶部说全部去过、进度却是 0"的口径混乱
+// 我的拔草进度(唯一口径,所有页面共用):纯由真实行为派生,禁止手动勾选
+// —— 去过 = 有打卡/评价/消费记录(iHaveBeenTo 覆盖 MY_CHECKINS),不再叠加手动勾选
 export function effectiveCheckedOff(list) {
-  const manual = new Set(getListMeta(list.id).checkedOff || []);
+  const been = new Set();
   list.items.forEach((it) => {
-    if (iHaveBeenTo(it.poi?.name)) manual.add(it.poi.name);
+    if (iHaveBeenTo(it.poi?.name)) been.add(it.poi.name);
   });
-  return manual;
+  return been;
 }
 
 // ── 类目归一(选店筛选 / 同主题匹配共用) ──

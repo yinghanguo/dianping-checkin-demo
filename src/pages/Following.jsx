@@ -1,4 +1,4 @@
-import nikiAvatar from "../assets/niki-avatar.svg";
+import { NIKI_AVATAR as nikiAvatar } from "../data/lists";
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,8 +13,7 @@ const LIST_EVENTS = [
   { listId: "list_r_coffee_sh", time: "昨天 20:14", action: "更新了私藏清单 · 新增 2 家店" },
 ];
 
-const NIKI_AVATAR =
-  {nikiAvatar};
+const NIKI_AVATAR = nikiAvatar;
 
 // 相对时间:刚刚 / X 分钟前 / X 小时前 / 昨天 HH:MM / M/D HH:MM
 function relativeTime(ts) {
@@ -560,10 +559,26 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
         {story.isTravel && <span className="text-xl">✈️</span>}
       </div>
 
-      {/* 中部:主图(无左右箭头;图内上下滑切内容,框外上下滑切人) */}
-      <div className="flex-1 px-4 flex items-center">
+      {/* 中部:左侧竖排指示器(与上下滑动方向一致) + 主图(无左右箭头) */}
+      <div className="flex-1 px-4 flex items-center gap-2.5">
+        {/* 竖排圆点指示器(图片左侧) */}
+        {photos.length > 1 && (
+          <div className="shrink-0 flex flex-col items-center gap-1.5">
+            {photos.map((_, i) => (
+              <div
+                key={i}
+                className="rounded-full transition-all"
+                style={{
+                  width: 5,
+                  height: i === photoIdx ? 16 : 5,
+                  background: i === photoIdx ? "white" : "rgba(255,255,255,0.3)",
+                }}
+              />
+            ))}
+          </div>
+        )}
         {/* 主图(方形 1:1) */}
-        <div className="flex-1 flex flex-col gap-3">
+        <div className="flex-1">
           <AnimatePresence mode="wait">
             <motion.div
               key={`${storyIdx}-${photoIdx}`}
@@ -596,23 +611,6 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
               </div>
             </motion.div>
           </AnimatePresence>
-
-          {/* 多图圆点指示器 */}
-          {photos.length > 1 && (
-            <div className="flex justify-center gap-1.5">
-              {photos.map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-full transition-all"
-                  style={{
-                    width: i === photoIdx ? 16 : 5,
-                    height: 5,
-                    background: i === photoIdx ? "white" : "rgba(255,255,255,0.3)",
-                  }}
-                />
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
