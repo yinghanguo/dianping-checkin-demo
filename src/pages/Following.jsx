@@ -530,8 +530,13 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
       onWheel={onBlankWheel}
       className="fixed inset-0 z-[200] bg-[#111] flex flex-col select-none"
     >
-      {/* 顶部:头像 + 名字 + 时间 + 关闭 */}
+      {/* 顶部:更多(左) + 头像 + 名字 + 时间 + 关闭(右) */}
       <div className="pt-10 px-5 pb-2 flex items-center gap-3">
+        <button className="text-white/65 p-1 shrink-0" aria-label="更多">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" />
+          </svg>
+        </button>
         <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
           <img src={story.friend.avatar} alt="" className="w-full h-full object-cover" />
         </div>
@@ -539,7 +544,7 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
           <div className="text-white text-[14px] font-semibold truncate">{story.friend.name}</div>
           <div className="text-white/55 text-[11px]">{story.time}</div>
         </div>
-        <button onClick={onClose} className="text-white/65 p-1 shrink-0">
+        <button onClick={onClose} className="text-white/65 p-1 shrink-0" aria-label="关闭">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M6 6l12 12M18 6l-12 12" strokeLinecap="round" />
           </svg>
@@ -555,20 +560,8 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
         {story.isTravel && <span className="text-xl">✈️</span>}
       </div>
 
-      {/* 中部:左右翻页箭头 + 主图 */}
-      <div className="flex-1 px-2 flex items-center gap-2">
-        {/* 左翻页 */}
-        <button
-          onClick={goPrev}
-          disabled={!hasPrev}
-          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-25"
-          style={{ background: "rgba(255,255,255,0.12)" }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-            <path d="M15 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-
+      {/* 中部:主图(无左右箭头;图内上下滑切内容,框外上下滑切人) */}
+      <div className="flex-1 px-4 flex items-center">
         {/* 主图(方形 1:1) */}
         <div className="flex-1 flex flex-col gap-3">
           <AnimatePresence mode="wait">
@@ -621,18 +614,6 @@ function StoryViewer({ stories, initialIdx, onClose, onRead }) {
             </div>
           )}
         </div>
-
-        {/* 右翻页 */}
-        <button
-          onClick={goNext}
-          disabled={!hasNext}
-          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-25"
-          style={{ background: "rgba(255,255,255,0.12)" }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-            <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
       </div>
 
       {/* 底部:输入框 + 点赞按钮 */}
@@ -733,12 +714,12 @@ function ListEventCard({ event, navigate }) {
         </span>
       </button>
 
-      {/* 底部操作栏(同 FeedCard) */}
+      {/* 底部操作栏(清单卡:评论 + 收藏,收藏替代点赞) */}
       <div className="flex items-center justify-between text-[12px] text-dpText-tertiary pt-1">
         <button className="flex items-center gap-1"><span>···</span></button>
         <div className="flex items-center gap-4">
           <button className="flex items-center gap-1">💬 评论</button>
-          <button className="flex items-center gap-1">♡ 点赞 {list.likeCount}</button>
+          <button onClick={open} className="flex items-center gap-1">🔖 收藏 {list.saveCount}</button>
         </div>
       </div>
     </div>
