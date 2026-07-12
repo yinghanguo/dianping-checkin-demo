@@ -5,7 +5,7 @@ const F = (name) => FRIENDS.find((f) => f.name === name) || FRIENDS[0];
 
 const IMG = {
   coffee1: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&q=80",
-  coffee2: "https://images.unsplash.com/photo-1572286258217-215ceb3ce0e3?w=400&q=80",
+  coffee2: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&q=80",
   food1: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=400&q=80",
   food2: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&q=80",
   food3: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80",

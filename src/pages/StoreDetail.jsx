@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import SaveToListSheet from "../components/SaveToListSheet";
 import { getListsContaining, getReasonFor, getMyLists } from "../data/lists";
+import { getPkInfoForStore } from "../data/pkArena";
 import { STORE_INFO } from "../data/shanghaiStores";
 
 // Deterministic pseudo-random from string seed
@@ -190,6 +191,8 @@ export default function StoreDetail() {
     () => getListsContaining(poi.name),
     [poi.name, listTick]
   );
+  // 私藏杯:本店是否在参赛清单里(「打卡即助攻」角标)
+  const pkInfo = useMemo(() => getPkInfoForStore(poi.name), [poi.name]);
   // 我是否已把本店收入某个清单
   const inMyList = useMemo(
     () => getMyLists().some((l) => l.items.some((it) => it.poi?.name === poi.name)),
@@ -453,6 +456,26 @@ export default function StoreDetail() {
                 </svg>
               </span>
             </div>
+
+            {/* 私藏杯角标:打卡即助攻(拔草计分的临门一脚) */}
+            {pkInfo && (
+              <button
+                onClick={() => navigate("/pk")}
+                className="w-full mb-3 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-left"
+                style={{ background: "linear-gradient(120deg, #2B1200, #7A2E00 70%, #C84A00 130%)" }}
+              >
+                <span className="text-[18px] shrink-0">🏆</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12.5px] font-semibold text-white truncate">
+                    这家店在 {pkInfo.count} 份参赛私藏里 · 私藏杯开赛中
+                  </div>
+                  <div className="text-[10.5px] mt-px" style={{ color: "#FFB27A" }}>
+                    收藏清单后来打卡 = 为它助攻「{pkInfo.trackName}」赛道
+                  </div>
+                </div>
+                <span className="shrink-0 text-[11px] text-white/75">看比赛 ›</span>
+              </button>
+            )}
 
             {/* 被收录模块(人格化信任信号 ②:清单为门店背书) */}
             {includedLists.length > 0 && (

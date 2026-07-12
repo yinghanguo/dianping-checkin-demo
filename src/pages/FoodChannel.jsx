@@ -125,38 +125,41 @@ export default function FoodChannel() {
           ))}
         </div>
 
-        {/* ── 双卡:美食排行 / 特价团 ── */}
+        {/* ── 双卡:美食排行 / 特价团(对齐图3,点进 /food-rank 与 /special-deals) ── */}
         <div className="px-2.5 pt-2 grid grid-cols-2 gap-2">
-          <div className="rounded-2xl p-3" style={{ background: "linear-gradient(135deg, #FFF6E8, #FFEFD8)" }}>
-            <div className="flex items-center gap-1 mb-2">
-              <span className="text-[14px] font-bold" style={{ color: "#C8541A" }}>美食排行</span>
-              <span className="text-[10px]" style={{ color: "#D98E4E" }}>真实评价</span>
+          <button onClick={() => navigate("/food-rank")} className="rounded-2xl p-2.5 text-left bg-white" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <div className="flex items-baseline gap-1 mb-2">
+              <span className="text-[16px] font-black text-dpInk">美食排行</span>
+              <span className="text-[15px] font-black" style={{ color: "#FF6F00" }}>↑</span>
+              <span className="text-[11px] text-dpText-tertiary">真实评价</span>
             </div>
-            <button onClick={() => openStore("东海滙舟山海鲜")} className="flex items-center gap-2 w-full text-left">
-              <div className="w-11 h-11 rounded-lg overflow-hidden bg-white shrink-0">
-                <img src={SH_IMG.donghai} alt="" className="w-full h-full object-cover" />
+            <div className="flex items-center gap-2">
+              <div className="relative w-11 h-11 rounded-lg overflow-hidden bg-white shrink-0">
+                <img src="https://images.unsplash.com/photo-1626804475297-41608ea09aeb?w=200&q=70" alt="" className="w-full h-full object-cover" />
+                <span className="absolute top-0 left-0 text-[7px] px-0.5 rounded-br text-white font-bold" style={{ background: "#FF6F00" }}>必吃榜</span>
               </div>
               <div className="min-w-0">
-                <div className="text-[12.5px] font-semibold text-dpInk truncate">东海滙舟山海鲜</div>
-                <div className="text-[10.5px] mt-0.5" style={{ color: "#C8541A" }}>2026年上榜 · 742m</div>
+                <div className="text-[12.5px] font-semibold text-dpInk truncate">鲜主·牛肉海鲜·排档</div>
+                <div className="text-[10.5px] mt-0.5" style={{ color: "#C8541A" }}>2026年上榜 · 1.5km</div>
               </div>
-            </button>
-          </div>
-          <div className="rounded-2xl p-3" style={{ background: "linear-gradient(135deg, #FFF0F0, #FFE4E8)" }}>
-            <div className="flex items-center gap-1 mb-2">
-              <span className="text-[14px] font-bold" style={{ color: "#E0362E" }}>特价团</span>
-              <span className="text-[10px]" style={{ color: "#E88" }}>天天低价</span>
+            </div>
+          </button>
+          <button onClick={() => navigate("/special-deals")} className="rounded-2xl p-2.5 text-left bg-white" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <div className="flex items-baseline gap-1 mb-2">
+              <span className="text-[16px] font-black text-dpInk">特价团</span>
+              <span className="text-[15px] font-black" style={{ color: "#FF2D6B" }}>↑</span>
+              <span className="text-[11px] text-dpText-tertiary">天天低价</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-11 h-11 rounded-lg overflow-hidden bg-white shrink-0">
-                <img src={SH_IMG.bco} alt="" className="w-full h-full object-cover" />
+                <img src={SH_IMG.soso} alt="" className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0">
-                <div className="text-[12.5px] font-semibold text-dpInk truncate">瑞幸咖啡｜茶咖10选1</div>
-                <div className="text-[11px] mt-0.5 font-bold" style={{ color: "#E0362E" }}>¥8.99 <span className="font-normal text-[9.5px]">加倍补 01:33:22</span></div>
+                <div className="text-[12.5px] font-semibold text-dpInk truncate">AMAM LONBAKER</div>
+                <div className="text-[11px] mt-0.5"><span className="font-black" style={{ color: "#FF2D6B" }}>¥9.9</span> <span className="text-[9.5px] px-1 rounded" style={{ background: "#FFE4EC", color: "#FF2D6B" }}>爆卖1万+</span></div>
               </div>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* ── 神券横幅 ── */}
@@ -166,52 +169,7 @@ export default function FoodChannel() {
           <span className="px-2.5 h-6 rounded-full text-white text-[11px] font-medium flex items-center shrink-0" style={{ background: "linear-gradient(135deg, #FF6F00, #FFA040)" }}>去使用</span>
         </div>
 
-        {/* ── 好友私藏模块(清单植入 ①) ── */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-2.5">
-          <div className="px-3.5 flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
-              </svg>
-              <span className="text-[15px] font-bold text-dpInk">好友私藏</span>
-              <span className="text-[10.5px] text-dpText-tertiary">{friendLists.length} 位好友公开了附近的私藏</span>
-            </div>
-            <button className="text-[11px] text-dpText-tertiary flex items-center gap-0.5">
-              全部
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
-          <div className="flex gap-2.5 overflow-x-auto no-scrollbar px-2.5 pb-1">
-            {friendLists.map((l) => (
-              <button
-                key={l.id}
-                onClick={() => navigate(`/album/${l.id}`, { state: { src: "public" } })}
-                className="shrink-0 w-[168px] bg-white rounded-2xl overflow-hidden text-left"
-                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
-              >
-                <div className="relative w-full bg-[#f0f0f0]" style={{ aspectRatio: "16/10" }}>
-                  <img src={l.cover} alt="" className="w-full h-full object-cover" loading="lazy" />
-                  <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-                    <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
-                      <img src={l.owner.avatar} alt="" className="w-full h-full object-cover" />
-                    </div>
-                    <span className="text-[9px] text-white max-w-[80px] truncate">{l.owner.name}</span>
-                  </div>
-                </div>
-                <div className="px-2.5 py-2">
-                  <div className="text-[12px] font-medium text-dpInk leading-snug" style={{ display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                    {l.title}
-                  </div>
-                  <div className="text-[10px] text-dpText-tertiary mt-1">
-                    {l.items.length} 家店 · 藏 {l.saveCount}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </motion.div>
+        {/* 好友私藏模块已下移为门店列表第 2 家后的插片(见下方 stores.map) */}
 
         {/* ── 分类 Tab + 筛选 chips ── */}
         <div className="bg-white mt-2.5 rounded-t-2xl">
@@ -249,13 +207,13 @@ export default function FoodChannel() {
             })}
           </div>
 
-          {/* ── 门店列表(清单植入 ②:好友私藏标识) ── */}
-          {stores.map((name) => {
+          {/* ── 门店列表(清单植入 ②:好友私藏标识;第 2 家后插「好友私藏」插片) ── */}
+          {stores.map((name, storeIdx) => {
             const info = STORE_INFO[name];
             const inLists = getListsContaining(name);
             return (
+              <React.Fragment key={name}>
               <button
-                key={name}
                 onClick={() => openStore(name)}
                 className="w-full px-3.5 py-3.5 flex gap-3 text-left border-b border-[#f7f7f7]"
               >
@@ -315,10 +273,70 @@ export default function FoodChannel() {
                   ))}
                 </div>
               </button>
+              {/* 第 2 家门店后插「好友私藏」插片 */}
+              {storeIdx === 1 && <FriendListsInsert friendLists={friendLists} navigate={navigate} />}
+              </React.Fragment>
             );
           })}
         </div>
       </div>
     </div>
+  );
+}
+
+// ── 好友私藏插片(嵌在门店列表第 2 家之后) ──
+function FriendListsInsert({ friendLists, navigate }) {
+  if (!friendLists.length) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="border-b-8 border-[#f5f5f5] py-3"
+      style={{ background: "linear-gradient(180deg,#FFFAF3,#ffffff)" }}
+    >
+      <div className="px-3.5 flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF6F00" strokeWidth="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+          </svg>
+          <span className="text-[15px] font-bold text-dpInk">好友私藏</span>
+          <span className="text-[10.5px] text-dpText-tertiary">{friendLists.length} 位好友公开了附近的私藏</span>
+        </div>
+        <button className="text-[11px] text-dpText-tertiary flex items-center gap-0.5">
+          全部
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+      <div className="flex gap-2.5 overflow-x-auto no-scrollbar px-2.5 pb-1">
+        {friendLists.map((l) => (
+          <button
+            key={l.id}
+            onClick={() => navigate(`/album/${l.id}`, { state: { src: "public" } })}
+            className="shrink-0 w-[168px] bg-white rounded-2xl overflow-hidden text-left"
+            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
+          >
+            <div className="relative w-full bg-[#f0f0f0]" style={{ aspectRatio: "16/10" }}>
+              <img src={l.cover} alt="" className="w-full h-full object-cover" loading="lazy" />
+              <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                <div className="w-4 h-4 rounded-full overflow-hidden bg-white">
+                  <img src={l.owner.avatar} alt="" className="w-full h-full object-cover" />
+                </div>
+                <span className="text-[9px] text-white max-w-[80px] truncate">{l.owner.name}</span>
+              </div>
+            </div>
+            <div className="px-2.5 py-2">
+              <div className="text-[12px] font-medium text-dpInk leading-snug" style={{ display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {l.title}
+              </div>
+              <div className="text-[10px] text-dpText-tertiary mt-1">
+                {l.items.length} 家店 · 藏 {l.saveCount}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </motion.div>
   );
 }

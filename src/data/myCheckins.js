@@ -20,7 +20,7 @@ const IMG = {
   // 咖啡
   coffee: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80",
   latte_art: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&q=80",
-  cappuccino: "https://images.unsplash.com/photo-1572286258217-215ceb3ce0e3?w=600&q=80",
+  cappuccino: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600&q=80",
   brunch_kiwi: "https://images.unsplash.com/photo-1493770348161-369560ae357d?w=600&q=80",
   pastry: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&q=80",
   orange_juice: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=600&q=80",

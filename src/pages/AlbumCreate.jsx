@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MY_CHECKINS } from "../data/myCheckins";
 import { addList, getList, updateList, publicEligibility, ME, categorize, CATEGORY_BUCKETS } from "../data/lists";
+import { recommendPkTags, PK_THEMES, PK_DISTRICT_SAMPLES } from "../data/pkArena";
 
 // 私藏清单编辑器(创作主场景)
 // - 无 AI 代写:标题/理由全部用户自己写;AI 只保留选店层面的辅助筛选
@@ -15,6 +16,7 @@ export default function AlbumCreate() {
   const { state: navState } = useLocation();
   const isEditing = Boolean(editId);
   const draft = navState?.draft; // AI 选店筛选结果(仅店集合,不代写)
+  const pkEntry = navState?.pkEntry; // 从「比赛」入口进来:多一步挂参赛灵感标签
 
   const [title, setTitle] = useState("");
   const [visibility, setVisibility] = useState("public"); // 默认公开
@@ -26,7 +28,12 @@ export default function AlbumCreate() {
   const [pendingIds, setPendingIds] = useState(new Set());
   const [toast, setToast] = useState(null);
   const [publishIssue, setPublishIssue] = useState(null); // 发布不达标弹窗
-  const [fromDraft, setFromDraft] = useState(false);
+  const [suggestedTitle, setSuggestedTitle] = useState(""); // 草稿携带的主题建议,一键填入
+  const [pkTag, setPkTag] = useState(null); // 参赛灵感标签 { group, name }
+  const [tagSheet, setTagSheet] = useState(false);
+
+  // 参赛标签推荐(按清单内容给商圈/主题灵感)
+  const pkRec = useMemo(() => recommendPkTags(items), [items]);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -37,7 +44,7 @@ export default function AlbumCreate() {
   useEffect(() => {
     if (!draft || editId) return;
     setItems(draft.items || []);
-    setFromDraft(true);
+    setSuggestedTitle(draft.suggestedTitle || "");
   }, [draft, editId]);
 
   // 编辑已有清单预填
@@ -47,6 +54,7 @@ export default function AlbumCreate() {
     if (!list) return;
     setTitle(list.title);
     setVisibility(list.visibility || "public");
+    setPkTag(list.pkTag || null);
     setItems(
       list.items.map((item) => {
         const checkin = MY_CHECKINS.find(
@@ -175,6 +183,7 @@ export default function AlbumCreate() {
         cover: cover || existing.cover,
         visibility: vis,
         items: listItems,
+        pkTag: pkTag || existing.pkTag || null,
       });
       navigate(`/album/${editId}`, { replace: true });
     } else {
@@ -190,6 +199,7 @@ export default function AlbumCreate() {
         createdAt: `${now.getMonth() + 1}/${now.getDate()}`,
         updatedAt: `${now.getMonth() + 1}/${now.getDate()}`,
         items: listItems,
+        pkTag: pkTag || null,
       };
       addList(list);
       navigate(`/album/${list.id}`, { replace: true });
@@ -229,25 +239,6 @@ export default function AlbumCreate() {
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        {/* ── AI 选店提示条(仅筛选,不代写) ── */}
-        {fromDraft && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-4 rounded-2xl px-4 py-3 flex items-start gap-2.5"
-            style={{ background: "linear-gradient(135deg, #FFF6E5, #FFEAD0)" }}
-          >
-            <span className="text-lg leading-none mt-0.5">✨</span>
-            <div className="text-[12px] text-dpInk leading-relaxed">
-              <span className="font-semibold">AI 从你的发布里筛出了这些店。</span>
-              <br />
-              <span className="text-dpText-secondary">
-                删掉不想要的;标题和推荐理由由你自己来写——理由已带入你当时发布的原文,可直接修改。
-              </span>
-            </div>
-          </motion.div>
-        )}
-
         {/* ── Title field(无 AI 生成) ── */}
         <div
           className="mx-4 mt-4 bg-white rounded-2xl px-4 py-3"
@@ -259,10 +250,87 @@ export default function AlbumCreate() {
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="一个主题口径，比如「适合请客的本帮菜」"
+            placeholder="描述清单主题（建议12字以内）"
             className="w-full text-[15px] text-dpInk placeholder-[#bbb] outline-none bg-transparent"
           />
+          {suggestedTitle && !title.trim() && (
+            <button
+              onClick={() => setTitle(suggestedTitle)}
+              className="mt-2 flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[12px]"
+              style={{ background: "#FFF3E5", color: "#E65000" }}
+            >
+              <span>「{suggestedTitle}」</span>
+              <span className="font-medium">一键填入</span>
+            </button>
+          )}
         </div>
+
+        {/* ── 参赛灵感标签(仅从「比赛」入口进来时展示;挂在清单下面) ── */}
+        {pkEntry && (
+          <div
+            className="mx-4 mt-3 rounded-2xl px-4 py-3.5"
+            style={{ background: "linear-gradient(135deg, #FFF6E9, #FFEBD6)", border: "1px solid rgba(255,111,0,0.2)" }}
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-[13px]">🏆</span>
+              <span className="text-[13px] font-bold text-dpInk">私藏杯 · 挂一个灵感标签</span>
+            </div>
+            <div className="text-[10.5px] text-dpText-tertiary mt-0.5 mb-2.5">
+              标签只是灵感和归类,不是固定赛道;挂上后清单会带着它进比赛
+            </div>
+
+            {pkTag ? (
+              <div className="flex items-center gap-2">
+                <span
+                  className="px-2.5 h-7 rounded-full text-[12px] font-medium flex items-center gap-1"
+                  style={
+                    pkTag.group === "商圈"
+                      ? { background: "#E8F1FF", color: "#2F6FED" }
+                      : { background: "#FFF0E5", color: "#E65000" }
+                  }
+                >
+                  <span className="text-[10px] opacity-70">{pkTag.group}</span>
+                  {pkTag.name}
+                </span>
+                <button onClick={() => setTagSheet(true)} className="text-[11.5px] text-dpText-secondary underline">更换</button>
+                <button onClick={() => setPkTag(null)} className="text-[11.5px] text-dpText-tertiary">移除</button>
+              </div>
+            ) : (
+              <>
+                <div className="text-[10.5px] text-dpText-secondary mb-1.5">按你选的店,推荐这几个方向:</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {pkRec.themes.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => setPkTag({ group: "主题", name })}
+                      className="px-2.5 h-7 rounded-full text-[12px] flex items-center gap-1 bg-white"
+                      style={{ border: "1px solid #FFD5B0", color: "#E65000" }}
+                    >
+                      <span className="text-[10px] opacity-60">主题</span>{name}
+                    </button>
+                  ))}
+                  {pkRec.districts.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => setPkTag({ group: "商圈", name })}
+                      className="px-2.5 h-7 rounded-full text-[12px] flex items-center gap-1 bg-white"
+                      style={{ border: "1px solid #C7DCFF", color: "#2F6FED" }}
+                    >
+                      <span className="text-[10px] opacity-60">商圈</span>{name}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setTagSheet(true)}
+                    className="px-2.5 h-7 rounded-full text-[12px] flex items-center bg-white text-dpText-secondary"
+                    style={{ border: "1px dashed #ccc" }}
+                  >
+                    更多灵感 ›
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* ── Item cards ── */}
         {items.length > 0 && (
@@ -346,6 +414,71 @@ export default function AlbumCreate() {
           >
             {toast}
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── 参赛灵感标签选择 Sheet ── */}
+      <AnimatePresence>
+        {tagSheet && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setTagSheet(false)}
+              className="absolute inset-0 z-[100] bg-black/40"
+            />
+            <motion.div
+              initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 280 }}
+              className="absolute left-0 right-0 bottom-0 z-[101] bg-white rounded-t-3xl flex flex-col"
+              style={{ maxHeight: "78vh", boxShadow: "0 -10px 40px rgba(0,0,0,0.15)" }}
+            >
+              <div className="pt-2.5 pb-1 flex justify-center shrink-0">
+                <div className="w-11 h-1 rounded-full bg-[#e0e0e0]" />
+              </div>
+              <div className="px-5 pt-1 pb-2 shrink-0">
+                <div className="text-[16px] font-semibold text-dpInk">挑一个灵感标签</div>
+                <div className="text-[11px] text-dpText-tertiary mt-0.5">商圈或主题任选一个,挂在清单上进比赛</div>
+              </div>
+              <div className="flex-1 overflow-y-auto no-scrollbar px-5 pb-6">
+                <div className="flex items-center gap-1.5 mt-2 mb-2">
+                  <span className="px-1.5 h-[18px] rounded text-[10px] font-medium flex items-center" style={{ background: "#FFF0E5", color: "#E65000" }}>主题</span>
+                  <span className="text-[10px] text-dpText-tertiary">你最懂的那个场景</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {PK_THEMES.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => { setPkTag({ group: "主题", name }); setTagSheet(false); }}
+                      className={`px-2.5 h-7 rounded-full text-[12px] flex items-center ${
+                        pkTag?.name === name ? "text-white" : "bg-[#FFF8F2] text-dpText-secondary"
+                      }`}
+                      style={pkTag?.name === name ? { background: "#E65000" } : {}}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5 mt-4 mb-2">
+                  <span className="px-1.5 h-[18px] rounded text-[10px] font-medium flex items-center" style={{ background: "#E8F1FF", color: "#2F6FED" }}>商圈</span>
+                  <span className="text-[10px] text-dpText-tertiary">你最懂的那片街区(共 55 个)</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {PK_DISTRICT_SAMPLES.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => { setPkTag({ group: "商圈", name }); setTagSheet(false); }}
+                      className={`px-2.5 h-7 rounded-full text-[12px] flex items-center ${
+                        pkTag?.name === name ? "text-white" : "bg-[#F5F7FA] text-dpText-secondary"
+                      }`}
+                      style={pkTag?.name === name ? { background: "#2F6FED" } : {}}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 

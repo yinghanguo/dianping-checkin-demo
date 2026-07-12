@@ -20,6 +20,11 @@ import Search from "./pages/Search";
 import FoodChannel from "./pages/FoodChannel";
 import WechatShare from "./pages/WechatShare";
 import Collection from "./pages/Collection";
+import PkArena from "./pages/PkArena";
+import RankBoard from "./pages/RankBoard";
+import FreeTrial from "./pages/FreeTrial";
+import FoodRank from "./pages/FoodRank";
+import SpecialDeals from "./pages/SpecialDeals";
 
 export default function App() {
   return (
@@ -46,6 +51,11 @@ export default function App() {
               <Route path="/food" element={<FoodChannel />} />
               <Route path="/wechat-share/:id" element={<WechatShare />} />
               <Route path="/collection" element={<Collection />} />
+              <Route path="/pk" element={<PkArena />} />
+              <Route path="/rankboard" element={<RankBoard />} />
+              <Route path="/free-trial" element={<FreeTrial />} />
+              <Route path="/food-rank" element={<FoodRank />} />
+              <Route path="/special-deals" element={<SpecialDeals />} />
             </Routes>
           </PhoneFrame>
         </BrowserRouter>

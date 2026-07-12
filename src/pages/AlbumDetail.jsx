@@ -136,6 +136,22 @@ export default function AlbumDetail() {
           {list.description && (
             <div className="text-[12.5px] text-dpText-secondary mt-1.5 leading-relaxed">{list.description}</div>
           )}
+          {/* 私藏杯参赛标签(灵感标签挂在清单下面) */}
+          {list.pkTag && (
+            <button
+              onClick={() => navigate("/pk")}
+              className="mt-2 inline-flex items-center gap-1 px-2 h-6 rounded-full text-[11px] font-medium"
+              style={{ background: "linear-gradient(120deg, #2B1200, #7A2E00 80%, #C84A00)", color: "#FFD9B8" }}
+            >
+              🏆 私藏杯
+              <span
+                className="px-1 rounded text-[10px]"
+                style={{ background: "rgba(255,255,255,0.16)", color: "#fff" }}
+              >
+                {list.pkTag.group} · {list.pkTag.name}
+              </span>
+            </button>
+          )}
           {/* 信息条 */}
           <div className="text-[12px] mt-2 flex items-center gap-2 flex-wrap">
             <span className="text-dpText-tertiary">{list.items.length} 家店</span>
